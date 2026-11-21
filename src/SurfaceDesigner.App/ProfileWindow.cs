@@ -89,7 +89,6 @@ public sealed class ProfileWindow : Window
     // =====================================================================
     //  Надлъжен профил
     // =====================================================================
-
     private UIElement BuildProfileTab()
     {
         var top = new WrapPanel { Margin = new Thickness(4) };
@@ -152,6 +151,7 @@ public sealed class ProfileWindow : Window
             else if (_profileChart.DesignIndex < 0) _profileChart.DesignIndex = _profileChart.Series.Count;
             _profileChart.Series.Add(new ChartSeries(name, ColorFor(name, ref k), ProfileSampler.Sample(s, _line)));
         }
+
         _profileChart.VerticalExaggeration = NumberParser.TryParse(_veBox.Text, out var ve) && ve > 0 ? ve : null;
         _profileChart.Refresh();
 
@@ -161,12 +161,15 @@ public sealed class ProfileWindow : Window
             var z = s.Points.Where(q => q.Z.HasValue).Select(q => q.Z!.Value).ToList();
             if (z.Count > 0) sb.Append(string.Create(Ci, $"   |   {s.Name}: {z.Min():F2} … {z.Max():F2}"));
         }
+
         if (_profileChart.ExistingIndex >= 0 && _profileChart.DesignIndex >= 0)
         {
             var a = ProfileSampler.Areas(_profileChart.Series[_profileChart.ExistingIndex].Points, _profileChart.Series[_profileChart.DesignIndex].Points);
             sb.Append(string.Create(Ci, $"   |   площ в профила: изкоп {a.Cut:F2} m², насип {a.Fill:F2} m²"));
         }
-        Dispatcher.BeginInvoke(() => _profileInfo.Text = sb + string.Create(Ci, $"   |   верт. преувеличение ×{_profileChart.ActualExaggeration:F1}"),
+
+        Dispatcher.BeginInvoke(
+            () => _profileInfo.Text = sb + string.Create(Ci, $"   |   верт. преувеличение ×{_profileChart.ActualExaggeration:F1}"),
             System.Windows.Threading.DispatcherPriority.Background);
     }
 
@@ -185,13 +188,13 @@ public sealed class ProfileWindow : Window
                 sb.Append(';').Append(ProfileSampler.ElevationAtStation(s.Points, st)?.ToString("F3", Ci) ?? "");
             sb.Append('\n');
         }
+
         File.WriteAllText(dlg.FileName, sb.ToString(), new UTF8Encoding(true));
     }
 
     // =====================================================================
     //  Напречни разрези
     // =====================================================================
-
     private UIElement BuildSectionsTab()
     {
         var top = new WrapPanel { Margin = new Thickness(4) };
@@ -229,6 +232,7 @@ public sealed class ProfileWindow : Window
             MessageBox.Show(this, "Изберете повърхнини за терен и проект.", Title);
             return;
         }
+
         if (!NumberParser.TryParse(_intervalBox.Text, out var interval) || interval <= 0 ||
             !NumberParser.TryParse(_leftBox.Text, out var left) || left < 0 ||
             !NumberParser.TryParse(_rightBox.Text, out var right) || right < 0 || left + right <= 0)
@@ -236,6 +240,7 @@ public sealed class ProfileWindow : Window
             MessageBox.Show(this, "Невалидни интервал или ширини.", Title);
             return;
         }
+
         if (_length / interval > 5000) { MessageBox.Show(this, "Твърде много разрези – увеличете интервала.", Title); return; }
 
         _sections = Alignment.CrossSections(_line, interval, left, right).Select(cs =>
@@ -271,6 +276,7 @@ public sealed class ProfileWindow : Window
             cut += (_sections[i].Areas.Cut + _sections[i - 1].Areas.Cut) / 2 * ds;
             fill += (_sections[i].Areas.Fill + _sections[i - 1].Areas.Fill) / 2 * ds;
         }
+
         return (cut, fill);
     }
 
@@ -289,7 +295,8 @@ public sealed class ProfileWindow : Window
 
         var (tc, tf) = Volumes(_sections.Count - 1);
         var (cc, cf) = Volumes(i);
-        _sectionInfo.Text = string.Create(Ci,
+        _sectionInfo.Text = string.Create(
+            Ci,
             $"Разрез {Alignment.FormatStation(s.Line.Station)}:  изкоп {s.Areas.Cut:F2} m²,  насип {s.Areas.Fill:F2} m²\n" +
             $"Натрупано до тук:  изкоп {cc:F1} m³,  насип {cf:F1} m³      " +
             $"Общо за трасето ({_sections.Count} разреза):  изкоп {tc:F1} m³,  насип {tf:F1} m³,  баланс {tf - tc:+0.0;-0.0;0} m³");
@@ -321,11 +328,14 @@ public sealed class ProfileWindow : Window
                 vc = (_sections[i].Areas.Cut + _sections[i - 1].Areas.Cut) / 2 * ds;
                 vf = (_sections[i].Areas.Fill + _sections[i - 1].Areas.Fill) / 2 * ds;
             }
+
             accC += vc; accF += vf;
             var s = _sections[i];
-            sb.Append(string.Create(Ci,
+            sb.Append(string.Create(
+                Ci,
                 $"{s.Line.Station:F3};{Alignment.FormatStation(s.Line.Station)};{s.Areas.Cut:F3};{s.Areas.Fill:F3};{vc:F3};{vf:F3};{accC:F3};{accF:F3}\n"));
         }
+
         File.WriteAllText(dlg.FileName, sb.ToString(), new UTF8Encoding(true));
     }
 

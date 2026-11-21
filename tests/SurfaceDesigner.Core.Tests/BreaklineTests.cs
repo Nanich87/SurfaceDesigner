@@ -13,6 +13,7 @@ public class BreaklineTests
         var rnd = new Random(seed);
         var pts = new List<Point3>();
         for (double y = 0; y <= size + 1e-9; y += step)
+        {
             for (double x = 0; x <= size + 1e-9; x += step)
             {
                 double jx = x, jy = y;
@@ -21,8 +22,11 @@ public class BreaklineTests
                     jx += (rnd.NextDouble() - 0.5) * jitter;
                     jy += (rnd.NextDouble() - 0.5) * jitter;
                 }
+
                 pts.Add(new Point3(jx, jy, z(jx, jy)));
             }
+        }
+
         return pts;
     }
 
@@ -42,14 +46,17 @@ public class BreaklineTests
         var v = s.Vertices;
         var edges = s.GetEdges();
         foreach (var bl in s.Breaklines)
+        {
             for (int i = 1; i < bl.Vertices.Count; i++)
             {
                 var a = bl.Vertices[i - 1].XY;
                 var b = bl.Vertices[i].XY;
                 foreach (var (p, q) in edges)
-                    Assert.False(ProperlyCross(a, b, v[p].XY, v[q].XY),
+                    Assert.False(
+                        ProperlyCross(a, b, v[p].XY, v[q].XY),
                         $"Ребро {v[p]}–{v[q]} пресича структурната линия {a}–{b}");
             }
+        }
     }
 
     private static void AssertValidTriangulation(Surface s, double expectedArea)
@@ -63,6 +70,7 @@ public class BreaklineTests
             Assert.True(a > 1e-12, "Изроден триъгълник");
             area += a;
         }
+
         Assert.Equal(expectedArea, area, 1e-6 * expectedArea);
     }
 
@@ -82,9 +90,14 @@ public class BreaklineTests
         Assert.Equal(tri.Length, r.Triangles.Length);
         bool found = false;
         for (int k = 0; k < r.Triangles.Length; k += 3)
+        {
             for (int e = 0; e < 3; e++)
+            {
                 if (ConstrainedDelaunay.Key(r.Triangles[k + e], r.Triangles[k + (e + 1) % 3]) == ConstrainedDelaunay.Key(a, b))
                     found = true;
+            }
+        }
+
         Assert.True(found);
 
         double area = 0;
@@ -114,6 +127,7 @@ public class BreaklineTests
                 if (rem <= len || i == bl.Vertices.Count - 1) { p = a + (b - a) * Math.Min(rem / len, 1); break; }
                 rem -= len;
             }
+
             Assert.Equal(bl.ElevationAtStation(st), s.ElevationAt(p.X, p.Y)!.Value, 6);
         }
     }
@@ -213,6 +227,7 @@ public class BreaklineTests
         var design = DesignSurfaceBuilder.Build(eg, new[] { p }, 1.0, "d");
         Assert.Single(design.Breaklines);
         AssertBreaklinesRespected(design);
+
         // точно на 1 cm вътре от ръба – котата на платформата
         Assert.Equal(2, design.ElevationAt(17.3 + 0.01, 30)!.Value, 6);
     }

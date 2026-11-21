@@ -19,6 +19,7 @@ public sealed class Breakline
             if (list.Count > 0 && Math.Abs(list[^1].X - v.X) < 1e-9 && Math.Abs(list[^1].Y - v.Y) < 1e-9) continue;
             list.Add(v);
         }
+
         if (list.Count < 2) throw new ArgumentException("Структурната линия трябва да има поне 2 различни върха.");
         Vertices = list;
     }
@@ -59,6 +60,7 @@ public sealed class Breakline
             }
             else run.Add(v);
         }
+
         if (run.Count >= 2) yield return new Breakline(Name, run);
     }
 
@@ -76,11 +78,14 @@ public sealed class Breakline
                 double t = len > 0 ? Math.Clamp((station - s) / len, 0, 1) : 0;
                 return a.Z + (b.Z - a.Z) * t;
             }
+
             s += len;
         }
+
         return Vertices[^1].Z;
     }
 
+    /// <inheritdoc/>
     public override string ToString() =>
         $"{Name} ({Vertices.Count} т., {Length2D:F1} m{(IsClosed ? ", затворена" : "")})";
 }
@@ -158,12 +163,14 @@ internal static class BreaklineSplitter
                     foreach (var (_, p) in extra.OrderBy(e => e.T)) poly.Add(p);
                 poly.Add(v[i]);
             }
+
             result.Add(poly);
         }
+
         return result;
     }
 
-    private static void Add(Dictionary<(int, int), List<(double, Point3)>> d, (int, int) key, double t, Point3 p)
+    private static void Add(Dictionary<(int A, int B), List<(double T, Point3 P)>> d, (int A, int B) key, double t, Point3 p)
     {
         if (!d.TryGetValue(key, out var list)) d[key] = list = new List<(double, Point3)>();
         list.Add((t, p));

@@ -88,6 +88,7 @@ public static class VolumeCalculator
                 double cut = 0, fill = 0, depthSum = 0;
                 int samples = 0;
                 for (int sy = 0; sy < subdivisions; sy++)
+                {
                     for (int sx = 0; sx < subdivisions; sx++)
                     {
                         double x = ox + ix * cellSize + (sx + 0.5) * sub;
@@ -102,6 +103,8 @@ public static class VolumeCalculator
                         if (d > 0) { fill += d * sampleArea; fillArea[iy] += sampleArea; }
                         else if (d < 0) { cut -= d * sampleArea; cutArea[iy] += sampleArea; }
                     }
+                }
+
                 int idx = grid.Index(ix, iy);
                 grid.Cut[idx] = cut;
                 grid.Fill[idx] = fill;

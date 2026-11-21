@@ -45,6 +45,7 @@ public sealed class SurfaceBoundary
         _ => t.ToString(),
     };
 
+    /// <inheritdoc/>
     public override string ToString() =>
         $"{Name} ({TypeName(Type)}, {Vertices.Count} т., {Polygon.Area:F1} m²)";
 
@@ -58,6 +59,7 @@ public sealed class SurfaceBoundary
             hasOuter = true;
             if (b.Polygon.Contains(x, y)) { inOuter = true; break; }
         }
+
         bool outerOk = !hasOuter || inOuter;
         bool visible = outerOk;
         foreach (var b in boundaries)
@@ -65,6 +67,7 @@ public sealed class SurfaceBoundary
             if (b.Type == BoundaryType.Outer || !b.Polygon.Contains(x, y)) continue;
             visible = b.Type == BoundaryType.Show && outerOk;
         }
+
         return visible;
     }
 }

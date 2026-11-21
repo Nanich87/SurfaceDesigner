@@ -37,6 +37,7 @@ public static class ContourGenerator
                     result.Add(new ContourSegment(level, p, q, majorEvery > 0 && li % majorEvery == 0));
             }
         }
+
         return result;
     }
 
@@ -68,6 +69,7 @@ public static class ContourGenerator
             }
 
             var used = new bool[segs.Count];
+
             // Първо отворените линии (започват от точка само с една отсечка), после затворените
             var starts = Enumerable.Range(0, segs.Count)
                 .OrderBy(i => byPoint[segs[i].A].Count == 1 || byPoint[segs[i].B].Count == 1 ? 0 : 1);
@@ -76,6 +78,7 @@ public static class ContourGenerator
                 if (used[s0]) continue;
                 used[s0] = true;
                 var seg = segs[s0];
+
                 // ориентираме така, че да започнем от свободния край (ако има)
                 var start = byPoint[seg.A].Count == 1 ? seg.A : byPoint[seg.B].Count == 1 ? seg.B : seg.A;
                 var line = new List<Point2> { start, start == seg.A ? seg.B : seg.A };
@@ -86,10 +89,12 @@ public static class ContourGenerator
                     line.Reverse();
                     Extend(line, segs, byPoint, used);
                 }
+
                 bool closed = line.Count > 3 && line[0] == line[^1];
                 result.Add(new ContourPolyline(group.Key, major, line, closed));
             }
         }
+
         return result;
     }
 
@@ -137,6 +142,7 @@ public static class ContourGenerator
     {
         if (b.X < a.X || (b.X == a.X && b.Y < a.Y)) (a, b) = (b, a);
         double t = (level - a.Z) / (b.Z - a.Z);
+
         // хоризонтала точно през връх – връщаме самия връх (побитово), за да се свързват отсечките
         if (t <= 0) return a.XY;
         if (t >= 1) return b.XY;

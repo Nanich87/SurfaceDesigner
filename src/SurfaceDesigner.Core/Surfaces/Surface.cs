@@ -24,9 +24,11 @@ public sealed class Surface
 
     public Surface(string name) => Name = name;
 
-    public Surface(string name, IEnumerable<Point3> points) : this(name) => _points.AddRange(points);
+    public Surface(string name, IEnumerable<Point3> points)
+        : this(name) => _points.AddRange(points);
 
-    public Surface(string name, IEnumerable<Point3> points, IEnumerable<Breakline> breaklines) : this(name, points) =>
+    public Surface(string name, IEnumerable<Point3> points, IEnumerable<Breakline> breaklines)
+        : this(name, points) =>
         _breaklines.AddRange(breaklines);
 
     public string Name { get; set; }
@@ -102,7 +104,6 @@ public sealed class Surface
     public int FailedBreaklineSegments => Tin.FailedConstraints;
 
     // ---------- промени на точки ----------
-
     public int AddPoint(Point3 p)
     {
         _points.Add(p);
@@ -153,7 +154,6 @@ public sealed class Surface
     }
 
     // ---------- промени на структурни линии ----------
-
     public void AddBreakline(Breakline line)
     {
         _breaklines.Add(line);
@@ -181,7 +181,6 @@ public sealed class Surface
     }
 
     // ---------- промени на граници ----------
-
     public void AddBoundary(SurfaceBoundary boundary)
     {
         _boundaries.Add(boundary);
@@ -253,6 +252,7 @@ public sealed class Surface
             double d = Point2.Distance(p, Polygon2.ClosestOnSegment(v[i].XY, v[j].XY, p));
             if (d <= best) { best = d; a = i; b = j; }
         }
+
         return a >= 0;
     }
 
@@ -271,6 +271,7 @@ public sealed class Surface
             reason = "Реброто е по външния контур – има само един съседен триъгълник.";
             return false;
         }
+
         r = Opposite(tin, pair.T1, a, b);
         t = Opposite(tin, pair.T2, a, b);
         if (r >= tin.OriginalVertexCount || t >= tin.OriginalVertexCount)
@@ -278,12 +279,14 @@ public sealed class Surface
             reason = "Съседен триъгълник е създаден от граница на повърхнината.";
             return false;
         }
+
         var v = tin.Vertices;
         if (!ProperlyCross(v[a].XY, v[b].XY, v[r].XY, v[t].XY))
         {
             reason = "Двата триъгълника образуват неизпъкнал четириъгълник – реброто не може да се завърти.";
             return false;
         }
+
         reason = null;
         return true;
     }
@@ -305,6 +308,7 @@ public sealed class Surface
             int v = tin.Triangles[3 * tri + k];
             if (v != a && v != b) return v;
         }
+
         return -1;
     }
 
@@ -315,6 +319,7 @@ public sealed class Surface
         double scale = Math.Max(Math.Max(bb.Length, cc.Length), dd.Length);
         double eps = 1e-12 * scale * scale;
         double d1 = Point2.Cross(bb, cc), d2 = Point2.Cross(bb, dd);
+
         // a е в началото: a − c = −c
         double d3 = Point2.Cross(dd - cc, cc * -1), d4 = Point2.Cross(dd - cc, bb - cc);
         return ((d1 > eps && d2 < -eps) || (d1 < -eps && d2 > eps)) &&
@@ -372,6 +377,7 @@ public sealed class Surface
             double d2 = dx * dx + dy * dy;
             if (d2 <= bestD2) { bestD2 = d2; best = i; }
         }
+
         return best;
     }
 
@@ -429,15 +435,19 @@ public sealed class Surface
 
         bool any = used > 0;
         return new SurfaceStatistics(
-            _points.Count, _breaklines.Count, _boundaries.Count, t.Length / 3,
+            _points.Count,
+            _breaklines.Count,
+            _boundaries.Count,
+            t.Length / 3,
             any ? minZ : double.NaN,
             any ? maxZ : double.NaN,
             any ? sumZ / used : double.NaN,
-            area2D, area3D, tin.Bounds);
+            area2D,
+            area3D,
+            tin.Bounds);
     }
 
     // ---------- триангулация ----------
-
     private TinData Tin
     {
         get
@@ -452,6 +462,7 @@ public sealed class Surface
                     tin = TinData.Build(_points.ToArray(), _breaklines.ToArray(), _boundaries.ToArray(), _edgeSwaps.ToArray(), _maxEdgeLength);
                     _tin = tin;
                 }
+
                 return tin;
             }
         }
@@ -466,7 +477,7 @@ public sealed class Surface
         public required int[] Triangles { get; init; }
         public required Bounds2 Bounds { get; init; }
         public required TriangleGrid Grid { get; init; }
-        public required HashSet<(int, int)> Constrained { get; init; }
+        public required HashSet<(int A, int B)> Constrained { get; init; }
         public required int FailedConstraints { get; init; }
         public required List<int> FailedSwaps { get; init; }
 
@@ -477,7 +488,7 @@ public sealed class Surface
 
         public IReadOnlyList<(int A, int B)> Edges => _edges ??= ComputeEdges();
 
-        private static (long, long) Key(Point3 p) => ((long)Math.Round(p.X * 1e4), (long)Math.Round(p.Y * 1e4));
+        private static (long X, long Y) Key(Point3 p) => ((long)Math.Round(p.X * 1e4), (long)Math.Round(p.Y * 1e4));
 
         /// <summary>Индекси на върховете, участващи в триъгълници (или всички, ако няма триъгълници).</summary>
         public IEnumerable<int> UsedVertices()
@@ -510,6 +521,7 @@ public sealed class Surface
                             byKey[Key(v)] = idx;
                             unique.Add(idx);
                         }
+
                         if (prev >= 0 && prev != idx) constraints.Add((prev, idx));
                         prev = idx;
                     }
@@ -576,9 +588,11 @@ public sealed class Surface
                                   mesh.TrySwapEdge(sa, sb);
                         if (!ok) failedSwaps.Add(i);
                     }
+
                     tris = new List<int>(mesh.GetTriangles());
                 }
             }
+
             int originalVertexCount = verts.Count;
 
             // 6. Граници: точно вмъкване на контурите (разцепване) и филтър по център на тежестта
@@ -590,11 +604,13 @@ public sealed class Surface
                     var ring = b.Vertices;
                     for (int i = 0; i < ring.Count; i++) mesh.InsertSegment(ring[i], ring[(i + 1) % ring.Count]);
                 }
+
                 for (int i = verts.Count; i < mesh.VertexCount; i++)
                 {
                     var p = mesh.GetPoint(i);
                     verts.Add(new Point3(p.X, p.Y, mesh.GetZ(i)));
                 }
+
                 constrained = mesh.ConstrainedEdges;
 
                 var all = mesh.GetTriangles();
@@ -630,23 +646,26 @@ public sealed class Surface
             };
         }
 
-        private static (long, long) Key2(Point2 p) => ((long)Math.Round(p.X * 1e4), (long)Math.Round(p.Y * 1e4));
+        private static (long X, long Y) Key2(Point2 p) => ((long)Math.Round(p.X * 1e4), (long)Math.Round(p.Y * 1e4));
 
         private Dictionary<(int, int), (int T1, int T2)>? _edgeTriangles;
 
         /// <summary>Ребро → двата съседни триъгълника (T2 = -1 за контурно ребро). Изгражда се при нужда.</summary>
-        public Dictionary<(int, int), (int T1, int T2)> EdgeTriangles
+        public Dictionary<(int A, int B), (int T1, int T2)> EdgeTriangles
         {
             get
             {
                 if (_edgeTriangles != null) return _edgeTriangles;
                 var d = new Dictionary<(int, int), (int, int)>(Triangles.Length);
                 for (int t = 0; t < Triangles.Length / 3; t++)
+                {
                     for (int e = 0; e < 3; e++)
                     {
                         var key = ConstrainedDelaunay.Key(Triangles[3 * t + e], Triangles[3 * t + (e + 1) % 3]);
                         d[key] = d.TryGetValue(key, out var pr) ? (pr.Item1, t) : (t, -1);
                     }
+                }
+
                 return _edgeTriangles = d;
             }
         }
@@ -659,7 +678,7 @@ public sealed class Surface
             private readonly Dictionary<(int, int), List<int>> _cells = new();
             private readonly double _cell;
 
-            public SegmentIndex(List<Point3> verts, List<(int, int)> segs)
+            public SegmentIndex(List<Point3> verts, List<(int A, int B)> segs)
             {
                 _v = verts;
                 _segs = segs;
@@ -668,8 +687,8 @@ public sealed class Surface
                 _cell = Math.Max(total / segs.Count, 1e-3);
                 for (int s = 0; s < segs.Count; s++)
                 {
-                    var a = verts[segs[s].Item1].XY;
-                    var b = verts[segs[s].Item2].XY;
+                    var a = verts[segs[s].A].XY;
+                    var b = verts[segs[s].B].XY;
                     int n = (int)Math.Ceiling(Point2.Distance(a, b) / (_cell * 0.5)) + 1;
                     var added = new HashSet<(int, int)>();
                     for (int k = 0; k <= n; k++)
@@ -677,18 +696,20 @@ public sealed class Surface
                         var p = a + (b - a) * ((double)k / n);
                         var c = CellOf(p.X, p.Y);
                         for (int dy = -1; dy <= 1; dy++)
+                        {
                             for (int dx = -1; dx <= 1; dx++)
                             {
-                                var key = (c.Item1 + dx, c.Item2 + dy);
+                                var key = (c.Ix + dx, c.Iy + dy);
                                 if (!added.Add(key)) continue;
                                 if (!_cells.TryGetValue(key, out var list)) _cells[key] = list = new List<int>();
                                 list.Add(s);
                             }
+                        }
                     }
                 }
             }
 
-            private (int, int) CellOf(double x, double y) => ((int)Math.Floor(x / _cell), (int)Math.Floor(y / _cell));
+            private (int Ix, int Iy) CellOf(double x, double y) => ((int)Math.Floor(x / _cell), (int)Math.Floor(y / _cell));
 
             public bool IsOnSegment(double x, double y, double tol)
             {
@@ -699,6 +720,7 @@ public sealed class Surface
                     var q = Polygon2.ClosestOnSegment(_v[_segs[s].Item1].XY, _v[_segs[s].Item2].XY, p);
                     if (Point2.Distance(p, q) <= tol) return true;
                 }
+
                 return false;
             }
         }
@@ -710,7 +732,7 @@ public sealed class Surface
             return l1 * Vertices[Triangles[3 * t]].Z + l2 * Vertices[Triangles[3 * t + 1]].Z + l3 * Vertices[Triangles[3 * t + 2]].Z;
         }
 
-        private IReadOnlyList<(int, int)> ComputeEdges()
+        private IReadOnlyList<(int A, int B)> ComputeEdges()
         {
             var set = new HashSet<(int, int)>();
             var list = new List<(int, int)>();
@@ -723,6 +745,7 @@ public sealed class Surface
                     if (set.Add(key)) list.Add(key);
                 }
             }
+
             return list;
         }
     }

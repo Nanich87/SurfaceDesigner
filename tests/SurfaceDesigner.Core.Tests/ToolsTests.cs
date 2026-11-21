@@ -13,6 +13,7 @@ public class DataHullTests
         var rnd = new Random(seed);
         var pts = new List<Point2>();
         for (double y = 0; y <= 100; y += 2.5)
+        {
             for (double x = 0; x <= 100; x += 2.5)
             {
                 if (x > 50 && y > 50) continue;
@@ -21,6 +22,8 @@ public class DataHullTests
                 double jy = edge ? 0 : (rnd.NextDouble() - 0.5);
                 pts.Add(new Point2(x + jx, y + jy));
             }
+        }
+
         return pts;
     }
 
@@ -67,6 +70,7 @@ public class ContourPolylineTests
         pts.AddRange(new[] { new Point3(0, 0, 0), new Point3(50, 0, 10), new Point3(50, 50, 10), new Point3(0, 50, 0) });
         var s = new Surface("p", pts);
         var lines = ContourGenerator.GeneratePolylines(s, 1);
+
         // нива 1..10: ъглите при x = 50 са точно на кота 10, така че хоризонталата 10 минава по ръба;
         // ниво 0 няма – върховете на нивото се смятат за „над“ него
         Assert.Equal(10, lines.Count);
@@ -83,11 +87,14 @@ public class ContourPolylineTests
     {
         var pts = new List<Point3>();
         for (int r = 0; r <= 20; r++)
+        {
             for (int k = 0; k < Math.Max(1, r * 6); k++)
             {
                 double a = 2 * Math.PI * k / Math.Max(1, r * 6);
                 pts.Add(new Point3(r * Math.Cos(a), r * Math.Sin(a), 20 - r));
             }
+        }
+
         var s = new Surface("cone", pts);
         var lines = ContourGenerator.GeneratePolylines(s, 2.5, 2);
         Assert.NotEmpty(lines);
@@ -102,8 +109,11 @@ public class ProfileTests
     {
         var pts = new List<Point3>();
         for (double y = 0; y <= 100; y += 10)
+        {
             for (double x = 0; x <= 100; x += 10)
                 pts.Add(new Point3(x, y, z(x, y)));
+        }
+
         return new Surface("p", pts);
     }
 
@@ -151,6 +161,7 @@ public class ProfileTests
         {
             var line = new[] { cs.Left, cs.Right };
             var a = ProfileSampler.Areas(ProfileSampler.Sample(eg, line), ProfileSampler.Sample(design, line));
+
             // платформа 40 m × 1 m + два откоса 1:2 (½·2·1 всеки) = 42 m²
             Assert.Equal(42, a.Fill, 1e-6);
             Assert.Equal(0, a.Cut, 1e-9);
@@ -195,6 +206,7 @@ public class DxfTests
             Assert.Equal(pairs.Count(p => p.Item1 == "0" && p.Item2 == "POLYLINE"), pairs.Count(p => p.Item1 == "0" && p.Item2 == "SEQEND"));
             Assert.Contains(pairs, p => p.Item1 == "0" && p.Item2 == "TEXT");
             Assert.Contains(pairs, p => p.Item1 == "8" && p.Item2 == DxfWriter.LayerMajor);
+
             // всички числови кодове на координати се четат с точка
             Assert.All(pairs.Where(p => p.Item1 is "10" or "20" or "30"), p =>
                 Assert.True(double.TryParse(p.Item2, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out _)));
@@ -242,13 +254,16 @@ public class DxfTests
             var l = File.ReadAllLines(path);
             var pairs = Enumerable.Range(0, l.Length / 2).Select(i => (l[2 * i].Trim(), l[2 * i + 1])).ToList();
             Assert.Equal(design.GetEdges().Count, pairs.Count(x => x.Item1 == "0" && x.Item2 == "LINE"));
+
             // всички слоеве на хоризонталите и TIN са проектни и червени (ACI 1)
             Assert.Contains(pairs, x => x.Item1 == "8" && x.Item2 == DxfWriter.DesignPrefix + DxfWriter.LayerMajor);
             Assert.Contains(pairs, x => x.Item1 == "8" && x.Item2 == DxfWriter.DesignPrefix + DxfWriter.LayerTin);
             Assert.DoesNotContain(pairs, x => x.Item1 == "8" && x.Item2 == DxfWriter.LayerMinor);
             for (int i = 0; i < pairs.Count - 3; i++)
+            {
                 if (pairs[i] == ("0", "LAYER") && pairs[i + 1].Item2.StartsWith(DxfWriter.DesignPrefix))
                     Assert.Equal(("62", "1"), pairs[i + 3]);
+            }
         }
         finally { File.Delete(path); }
     }
@@ -329,6 +344,7 @@ public class DxfTests
         var design = DesignSurfaceBuilder.Build(eg, new[] { p }, 2.0, "Проект");
         Assert.Equal(1, design.ContourInterval);
         Assert.Equal(4, design.MajorContourEvery);
+
         // преизчисляването не променя настройките на проекта
         design.ContourInterval = 0.25;
         design.ReplaceContentFrom(DesignSurfaceBuilder.Rebuild(design, eg, new[] { p })!);
@@ -346,6 +362,7 @@ public class DxfTests
         var old = ProjectSerializer.FromJson(
             "{\"Version\":1,\"ContourInterval\":2,\"MajorContourEvery\":10,\"Surfaces\":[{\"Name\":\"A\",\"Points\":[[0,0,0],[1,0,0],[0,1,1]]}],\"Platforms\":[]}");
         Assert.Equal((2.0, 10), (old.Surfaces[0].ContourInterval, old.Surfaces[0].MajorContourEvery));
+
         // още по-стар – без никакви настройки
         var older = ProjectSerializer.FromJson("{\"Version\":1,\"Surfaces\":[{\"Name\":\"A\",\"Points\":[[0,0,0],[1,0,0],[0,1,1]]}],\"Platforms\":[]}");
         Assert.Equal((0.5, 5), (older.Surfaces[0].ContourInterval, older.Surfaces[0].MajorContourEvery));

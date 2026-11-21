@@ -13,6 +13,7 @@ public sealed class Polygon2
             if (list.Count > 0 && Point2.Distance(list[^1], p) < 1e-9) continue;
             list.Add(p);
         }
+
         if (list.Count > 1 && Point2.Distance(list[0], list[^1]) < 1e-9) list.RemoveAt(list.Count - 1);
         if (list.Count < 3) throw new ArgumentException("Многоъгълникът трябва да има поне 3 различни върха.");
 
@@ -58,6 +59,7 @@ public sealed class Polygon2
                 cx += (_v[j].X + _v[i].X) * f;
                 cy += (_v[j].Y + _v[i].Y) * f;
             }
+
             if (Math.Abs(a) < 1e-12)
                 return new Point2(_v.Average(p => p.X), _v.Average(p => p.Y));
             a *= 0.5;
@@ -78,6 +80,7 @@ public sealed class Polygon2
                 x < (b.X - a.X) * (y - a.Y) / (b.Y - a.Y) + a.X)
                 inside = !inside;
         }
+
         return inside;
     }
 
@@ -96,6 +99,7 @@ public sealed class Polygon2
             double d2 = dx * dx + dy * dy;
             if (d2 < bestD2) { bestD2 = d2; best = q; }
         }
+
         return (best, Math.Sqrt(bestD2));
     }
 

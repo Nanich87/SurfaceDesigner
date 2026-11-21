@@ -44,11 +44,13 @@ public static class DataHull
         }
 
         for (int e = 0; e < tri.Length; e++)
+        {
             if (opp[e] < 0)
             {
                 onBoundary[tri[e]] = true;
                 queue.Enqueue(e, -Len(e));
             }
+        }
 
         int remaining = nt;
         while (queue.TryDequeue(out int e, out double negLen))
@@ -79,6 +81,7 @@ public static class DataHull
             outgoing[tri[e]] = e;
             startEdge = e;
         }
+
         var ring = new List<Point2>();
         if (startEdge < 0) return ring;
         int h = startEdge;
@@ -87,7 +90,8 @@ public static class DataHull
         {
             ring.Add(pts[tri[h]]);
             if (!outgoing.TryGetValue(tri[Next(h)], out h)) break;
-        } while (h != startEdge && guard++ < tri.Length);
+        }
+        while (h != startEdge && guard++ < tri.Length);
 
         return RemoveCollinear(ring);
     }
@@ -100,8 +104,11 @@ public static class DataHull
         if (tri.Length == 0) return 0;
         var lengths = new List<double>(tri.Length);
         for (int k = 0; k < tri.Length; k += 3)
+        {
             for (int e = 0; e < 3; e++)
                 lengths.Add(Point2.Distance(pts[tri[k + e]], pts[tri[k + (e + 1) % 3]]));
+        }
+
         lengths.Sort();
         return 3 * lengths[lengths.Count / 2];
     }
@@ -128,6 +135,7 @@ public static class DataHull
             double scale = Point2.Distance(a, b) * Point2.Distance(b, c);
             if (Math.Abs(cross) > 1e-10 * scale) result.Add(b);
         }
+
         return result.Count >= 3 ? result : ring;
     }
 }

@@ -7,8 +7,11 @@ internal sealed class TriangleGrid
 {
     private readonly Point3[] _points;
     private readonly int[] _tris;
-    private readonly double _minX, _minY, _cell;
-    private readonly int _nx, _ny;
+    private readonly double _minX;
+    private readonly double _minY;
+    private readonly double _cell;
+    private readonly int _nx;
+    private readonly int _ny;
     private readonly int[] _cellStart; // CSR
     private readonly int[] _cellItems;
 
@@ -63,12 +66,15 @@ internal sealed class TriangleGrid
             int y0 = CellY(Math.Min(a.Y, Math.Min(b.Y, c.Y)));
             int y1 = CellY(Math.Max(a.Y, Math.Max(b.Y, c.Y)));
             for (int iy = y0; iy <= y1; iy++)
+            {
                 for (int ix = x0; ix <= x1; ix++)
                     action(ix, iy, t);
+            }
         }
     }
 
     private int CellX(double x) => Math.Clamp((int)((x - _minX) / _cell), 0, _nx - 1);
+
     private int CellY(double y) => Math.Clamp((int)((y - _minY) / _cell), 0, _ny - 1);
 
     public int Find(double x, double y, out double l1, out double l2, out double l3)
@@ -83,6 +89,7 @@ internal sealed class TriangleGrid
             int t = _cellItems[k];
             if (Barycentric(t, x, y, out l1, out l2, out l3)) return t;
         }
+
         return -1;
     }
 

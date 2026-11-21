@@ -100,9 +100,11 @@ public static class SurfaceEditor
                 newZ[i] = apply ? p.Z + factor * (sum[i] / cnt[i] - p.Z) : p.Z;
                 if (apply) affected++;
             }
+
             int idx = 0;
             surface.TransformPoints(p => p with { Z = newZ[idx++] });
         }
+
         return affected;
     }
 
@@ -118,11 +120,14 @@ public static class SurfaceEditor
         double y0 = Math.Floor(b.MinY / step) * step;
         var list = new List<Point3>();
         for (double y = y0; y <= b.MaxY + 1e-9; y += step)
+        {
             for (double x = x0; x <= b.MaxX + 1e-9; x += step)
             {
                 var z = surface.ElevationAt(x, y);
                 if (z.HasValue) list.Add(new Point3(x, y, z.Value));
             }
+        }
+
         result.AddPoints(list);
         result.SetBreaklines(surface.Breaklines); // ръбовете и границите се запазват
         result.SetBoundaries(surface.Boundaries);
@@ -137,12 +142,15 @@ public static class SurfaceEditor
         var count = new Dictionary<(int, int), int>();
         var t = surface.Triangles;
         for (int k = 0; k < t.Length; k += 3)
+        {
             for (int e = 0; e < 3; e++)
             {
                 int a = t[k + e], b = t[k + (e + 1) % 3];
                 var key = a < b ? (a, b) : (b, a);
                 count[key] = count.GetValueOrDefault(key) + 1;
             }
+        }
+
         var set = new HashSet<int>();
         foreach (var (key, c) in count)
             if (c == 1) { set.Add(key.Item1); set.Add(key.Item2); }

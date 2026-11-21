@@ -27,10 +27,17 @@ public static class DxfWriter
     /// <param name="textHeight">Височина на надписите в единиците на чертежа (m); 0 – без надписи.</param>
     /// <param name="labelSpacing">Разстояние между надписите по една хоризонтала, m.</param>
     /// <param name="includeTriangles">Да се добавят ли и ребрата на триъгълниците (3D линии с коти) на слой TIN.</param>
-    public static int WriteContours(string path, Surface surface, double interval, int majorEvery = 5,
-                                    double textHeight = 1.0, double labelSpacing = 100, bool includeTriangles = false)
+    public static int WriteContours(
+        string path,
+        Surface surface,
+        double interval,
+        int majorEvery = 5,
+        double textHeight = 1.0,
+        double labelSpacing = 100,
+        bool includeTriangles = false)
     {
         var lines = ContourGenerator.GeneratePolylines(surface, interval, majorEvery);
+
         // Проектните хоризонтали – на отделни слоеве в червено (ACI 1), съществуващите – в кафяво/оранжево
         string prefix = surface.IsDesign ? DesignPrefix : "";
         string minor = prefix + LayerMinor, major = prefix + LayerMajor, labels = prefix + LayerLabels;
@@ -50,9 +57,13 @@ public static class DxfWriter
             w.Polyline2D(c.IsMajor ? major : minor, c.Points, c.Level, c.IsClosed);
 
         if (textHeight > 0)
+        {
             foreach (var c in lines.Where(l => l.IsMajor))
+            {
                 foreach (var (p, angle) in LabelPositions(c.Points, labelSpacing, textHeight))
                     w.Text(labels, p, c.Level, textHeight, angle, c.Level.ToString("0.##", CultureInfo.InvariantCulture));
+            }
+        }
 
         foreach (var b in surface.Boundaries)
             w.Polyline2D(LayerBoundary, b.Vertices, 0, true);
@@ -104,6 +115,7 @@ public static class DxfWriter
                 yield return (p, angle);
                 next += spacing;
             }
+
             s += len;
         }
     }
@@ -114,7 +126,9 @@ public static class DxfWriter
         private static readonly CultureInfo Ci = CultureInfo.InvariantCulture;
 
         private void G(int code, string value) => _sb.Append(code).Append('\n').Append(value).Append('\n');
+
         private void G(int code, double value) => G(code, value.ToString("0.0#####", Ci));
+
         private void G(int code, int value) => G(code, value.ToString(Ci));
 
         public void Header(IEnumerable<(string Name, int Color)> layers)
@@ -130,6 +144,7 @@ public static class DxfWriter
             {
                 G(0, "LAYER"); G(2, name); G(70, 0); G(62, color); G(6, "CONTINUOUS");
             }
+
             G(0, "ENDTAB");
             G(0, "ENDSEC");
 
@@ -153,6 +168,7 @@ public static class DxfWriter
                 G(0, "VERTEX"); G(8, layer);
                 G(10, pts[i].X); G(20, pts[i].Y); G(30, elevation);
             }
+
             G(0, "SEQEND"); G(8, layer);
         }
 
@@ -167,6 +183,7 @@ public static class DxfWriter
                 G(10, p.X); G(20, p.Y); G(30, p.Z);
                 G(70, 32); // 3D връх
             }
+
             G(0, "SEQEND"); G(8, layer);
         }
 

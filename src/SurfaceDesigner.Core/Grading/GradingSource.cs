@@ -49,6 +49,7 @@ public sealed class GradingSource
             if (p.ReferencePoint is { } r) sb.Append(",R").Append(r.X.ToString("R", ci)).Append(';').Append(r.Y.ToString("R", ci));
             foreach (var v in p.Boundary) sb.Append(';').Append(v.X.ToString("R", ci)).Append(' ').Append(v.Y.ToString("R", ci));
         }
+
         return sb.ToString();
     }
 }

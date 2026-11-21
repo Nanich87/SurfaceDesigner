@@ -10,6 +10,7 @@ public sealed class ProjectSaveTests : IDisposable
 
     public ProjectSaveTests() => Directory.CreateDirectory(_dir);
 
+    /// <inheritdoc/>
     public void Dispose()
     {
         try { Directory.Delete(_dir, recursive: true); } catch (IOException) { }

@@ -18,6 +18,7 @@ public class LandXmlReaderTests
             Array.Sort(arr);
             set.Add(string.Join(";", arr));
         }
+
         return set;
     }
 
@@ -45,6 +46,7 @@ public class LandXmlReaderTests
             var z1 = expected.ElevationAt(x, y);
             var z2 = actual.ElevationAt(x, y);
             Assert.Equal(z1.HasValue, z2.HasValue);
+
             // LandXML записва координатите до 0.1 мм – затова допуск 1 мм
             if (z1.HasValue) Assert.Equal(z1.Value, z2!.Value, 1e-3);
         }
@@ -66,10 +68,12 @@ public class LandXmlReaderTests
     {
         var s = SampleTerrain.Create("Сложна", pointCount: 1500);
         s.AddBreakline(new Breakline("ръб", new[] { new Point3(15, 30, 110), new Point3(120, 70, 104), new Point3(185, 160, 112) }));
+
         // ръчни завъртания на ребра → не-Делоне триангулация
         var rnd = new Random(9);
         for (int i = 0; i < 150; i++)
             if (s.TryFindEdge(rnd.NextDouble() * 200, rnd.NextDouble() * 200, 100, out int a, out int b)) s.SwapEdge(a, b, out _);
+
         // вдлъбнат външен контур, дупка и остров в дупката
         s.AddBoundary(new SurfaceBoundary("O", BoundaryType.Outer, new Point2[] { new(5, 8), new(150, 3), new(196, 90), new(110, 110), new(180, 190), new(10, 185) }));
         s.AddBoundary(new SurfaceBoundary("H", BoundaryType.Hide, new Point2[] { new(40, 40), new(100, 45), new(95, 100), new(45, 95) }));
@@ -95,6 +99,7 @@ public class LandXmlReaderTests
     public void Breaklines_AreImportedAsEditableObjects_AndTinStaysExact()
     {
         var s = SampleTerrain.Create("С линии", pointCount: 1200);
+
         // две пресичащи се линии (пресечната точка става връх на TIN) и затворена линия
         s.AddBreakline(new Breakline("Ос", new[] { new Point3(10, 100, 103), new Point3(190, 110, 106) }));
         s.AddBreakline(new Breakline("Напречна", new[] { new Point3(100, 10, 101), new Point3(95, 190, 108) }));
@@ -110,10 +115,14 @@ public class LandXmlReaderTests
 
         Assert.Equal(new[] { "Ос", "Напречна", "Площадка" }, r.Breaklines.Select(b => b.Name).ToArray());
         Assert.True(r.Breaklines[2].IsClosed);
+
         // всеки оригинален връх присъства в импортираната линия (плюс евентуално точки по нея – напр. пресичането)
         for (int i = 0; i < 3; i++)
+        {
             foreach (var v in s.Breaklines[i].Vertices)
                 Assert.Contains(r.Breaklines[i].Vertices, w => Point2.Distance(v.XY, w.XY) < 1e-3);
+        }
+
         Assert.Contains(r.Breaklines[0].Vertices, w => r.Breaklines[1].Vertices.Any(u => Point2.Distance(u.XY, w.XY) < 1e-3)); // общ връх
         Assert.Equal(0, r.FailedBreaklineSegments);
         Assert.All(r.Breaklines, b => Assert.All(b.Vertices.Zip(b.Vertices.Skip(1)), seg =>
@@ -177,6 +186,7 @@ public class LandXmlReaderTests
         var res = LandXmlReader.Parse(XDocument.Parse(xml));
         var s = Assert.Single(res.Surfaces);
         Assert.Equal(1, s.TriangleCount);
+
         // изток = X, север = Y
         Assert.Equal(new Point3(8500010, 4700000, 101), s.Points.Single(p => p.Z == 101));
         Assert.NotNull(s.ElevationAt(8500008, 4700002)); // видимият триъгълник 10-11-12 (под диагонала)

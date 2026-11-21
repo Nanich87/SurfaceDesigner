@@ -14,7 +14,10 @@ public sealed record ChartSeries(string Name, Color Color, IReadOnlyList<Profile
 /// </summary>
 public sealed class ProfileChart : FrameworkElement
 {
-    private const double MarginLeft = 64, MarginRight = 16, MarginTop = 16, MarginBottom = 40;
+    private const double MarginLeft = 64;
+    private const double MarginRight = 16;
+    private const double MarginTop = 16;
+    private const double MarginBottom = 40;
 
     private static readonly Brush Back = ColorRamp.Brush(Colors.White);
     private static readonly Brush GridBrush = ColorRamp.Brush(Color.FromRgb(0xE3, 0xE3, 0xE3));
@@ -25,7 +28,12 @@ public sealed class ProfileChart : FrameworkElement
     private static readonly Brush LabelBack = ColorRamp.Brush(Color.FromArgb(0xE6, 0xFF, 0xFF, 0xFF));
 
     private double? _hoverS;
-    private double _sMin, _sMax, _zMin, _zMax, _kx, _ky;
+    private double _sMin;
+    private double _sMax;
+    private double _zMin;
+    private double _zMax;
+    private double _kx;
+    private double _ky;
 
     public ProfileChart()
     {
@@ -55,14 +63,15 @@ public sealed class ProfileChart : FrameworkElement
 
     // ================= рисуване =================
 
-    protected override void OnRender(DrawingContext dc)
+    /// <inheritdoc/>
+    protected override void OnRender(DrawingContext drawingContext)
     {
         var rect = new Rect(RenderSize);
-        dc.DrawRectangle(Back, null, rect);
+        drawingContext.DrawRectangle(Back, null, rect);
         var all = Series.SelectMany(s => s.Points).Where(p => p.Z.HasValue).ToList();
         if (all.Count < 2)
         {
-            Text(dc, "Няма данни по линията.", new Point(MarginLeft, MarginTop), 13);
+            Text(drawingContext, "Няма данни по линията.", new Point(MarginLeft, MarginTop), 13);
             return;
         }
 
@@ -87,18 +96,20 @@ public sealed class ProfileChart : FrameworkElement
         }
 
         var plot = new Rect(MarginLeft, MarginTop, w, h);
-        DrawGrid(dc, plot);
-        dc.PushClip(new RectangleGeometry(plot));
-        DrawCutFill(dc);
-        foreach (var s in Series) DrawSeries(dc, s);
-        dc.Pop();
-        dc.DrawRectangle(null, new Pen(AxisBrush, 1), plot);
-        DrawLegend(dc, plot);
-        DrawHover(dc, plot);
+        DrawGrid(drawingContext, plot);
+        drawingContext.PushClip(new RectangleGeometry(plot));
+        DrawCutFill(drawingContext);
+        foreach (var s in Series) DrawSeries(drawingContext, s);
+        drawingContext.Pop();
+        drawingContext.DrawRectangle(null, new Pen(AxisBrush, 1), plot);
+        DrawLegend(drawingContext, plot);
+        DrawHover(drawingContext, plot);
     }
 
     private double X(double s) => MarginLeft + (s - _sMin) * _kx;
+
     private double Y(double z) => MarginTop + (_zMax - z) * _ky;
+
     private double SAt(double x) => _sMin + (x - MarginLeft) / _kx;
 
     private static double NiceStep(double range, int target)
@@ -120,6 +131,7 @@ public sealed class ProfileChart : FrameworkElement
             dc.DrawLine(pen, new Point(x, plot.Top), new Point(x, plot.Bottom));
             Text(dc, XFormat(s), new Point(x, plot.Bottom + 4), 11, center: true);
         }
+
         double sz = NiceStep(_zMax - _zMin, Math.Max(2, (int)(plot.Height / 40)));
         for (double z = Math.Ceiling(_zMin / sz) * sz; z <= _zMax + 1e-9; z += sz)
         {
@@ -127,6 +139,7 @@ public sealed class ProfileChart : FrameworkElement
             dc.DrawLine(pen, new Point(plot.Left, y), new Point(plot.Right, y));
             Text(dc, z.ToString(sz < 1 ? "0.00" : "0.0", CultureInfo.InvariantCulture), new Point(plot.Left - 6, y - 7), 11, right: true);
         }
+
         Text(dc, XTitle, new Point(plot.Left + plot.Width / 2, plot.Bottom + 20), 11, center: true);
     }
 
@@ -144,6 +157,7 @@ public sealed class ProfileChart : FrameworkElement
                 else ctx.LineTo(pt, true, true);
             }
         }
+
         g.Freeze();
         dc.DrawGeometry(null, new Pen(ColorRamp.Brush(s.Color), s.Thickness) { LineJoin = PenLineJoin.Round }, g);
     }
@@ -153,6 +167,7 @@ public sealed class ProfileChart : FrameworkElement
         if (ExistingIndex < 0 || DesignIndex < 0 || ExistingIndex >= Series.Count || DesignIndex >= Series.Count) return;
         var eg = Series[ExistingIndex].Points;
         var de = Series[DesignIndex].Points;
+
         // всички четириъгълници от един вид в една геометрия – без видими шевове между тях
         var fillGeo = new StreamGeometry { FillRule = FillRule.Nonzero };
         var cutGeo = new StreamGeometry { FillRule = FillRule.Nonzero };
@@ -161,16 +176,21 @@ public sealed class ProfileChart : FrameworkElement
         void Quad(double s0, double e0, double d0, double s1, double e1, double d1, bool fill)
         {
             var ctx = fill ? fillCtx : cutCtx;
+
             // обхождане в една и съща посока за всички – Nonzero ги обединява
             bool up = fill;
             ctx.BeginFigure(new Point(X(s0), Y(up ? e0 : d0)), true, true);
-            ctx.PolyLineTo(new[]
-            {
-                new Point(X(s1), Y(up ? e1 : d1)),
-                new Point(X(s1), Y(up ? d1 : e1)),
-                new Point(X(s0), Y(up ? d0 : e0)),
-            }, false, false);
+            ctx.PolyLineTo(
+                new[]
+                {
+                    new Point(X(s1), Y(up ? e1 : d1)),
+                    new Point(X(s1), Y(up ? d1 : e1)),
+                    new Point(X(s0), Y(up ? d0 : e0)),
+                },
+                false,
+                false);
         }
+
         var stations = eg.Select(p => p.Station).Concat(de.Select(p => p.Station)).Distinct().OrderBy(s => s).ToList();
         for (int i = 1; i < stations.Count; i++)
         {
@@ -190,6 +210,7 @@ public sealed class ProfileChart : FrameworkElement
                 Quad(sx, ex, ex, s1, e1.Value, d1.Value, h1 > 0);
             }
         }
+
         fillCtx.Close();
         cutCtx.Close();
         fillGeo.Freeze();
@@ -225,6 +246,7 @@ public sealed class ProfileChart : FrameworkElement
             lines.Add($"{Series[i].Name}: {(z.HasValue ? z.Value.ToString("0.000", CultureInfo.InvariantCulture) : "—")}");
             if (z.HasValue) dc.DrawEllipse(ColorRamp.Brush(Series[i].Color), null, new Point(x, Y(z.Value)), 3.5, 3.5);
         }
+
         if (ze.HasValue && zd.HasValue)
             lines.Add($"h = {(zd.Value - ze.Value).ToString("+0.000;-0.000;0.000", CultureInfo.InvariantCulture)}");
 
@@ -235,7 +257,13 @@ public sealed class ProfileChart : FrameworkElement
     }
 
     private FormattedText Formatted(string text, double size) =>
-        new(text, CultureInfo.InvariantCulture, FlowDirection.LeftToRight, new Typeface("Segoe UI"), size, TextBrush,
+        new(
+            text,
+            CultureInfo.InvariantCulture,
+            FlowDirection.LeftToRight,
+            new Typeface("Segoe UI"),
+            size,
+            TextBrush,
             VisualTreeHelper.GetDpi(this).PixelsPerDip);
 
     private void Text(DrawingContext dc, string text, Point at, double size, bool center = false, bool right = false)
@@ -247,6 +275,7 @@ public sealed class ProfileChart : FrameworkElement
 
     // ================= мишка =================
 
+    /// <inheritdoc/>
     protected override void OnMouseMove(MouseEventArgs e)
     {
         base.OnMouseMove(e);
@@ -258,6 +287,7 @@ public sealed class ProfileChart : FrameworkElement
         InvalidateVisual();
     }
 
+    /// <inheritdoc/>
     protected override void OnMouseLeave(MouseEventArgs e)
     {
         base.OnMouseLeave(e);

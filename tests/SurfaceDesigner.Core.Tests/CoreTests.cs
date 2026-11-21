@@ -13,8 +13,11 @@ public class TriangulationTests
     {
         var pts = new List<Point2>();
         for (int y = 0; y < 10; y++)
+        {
             for (int x = 0; x < 10; x++)
                 pts.Add(new Point2(x, y));
+        }
+
         var tris = Delaunay.Triangulate(pts);
         Assert.Equal(2 * 9 * 9, tris.Length / 3);
     }
@@ -49,8 +52,11 @@ public class TriangulationTests
     {
         var pts = new List<Point3>();
         for (int y = 0; y < 5; y++)
+        {
             for (int x = 0; x < 5; x++)
                 pts.Add(new Point3(8_500_000 + x * 10, 4_700_000 + y * 10, 500 + x));
+        }
+
         var s = new Surface("big", pts);
         Assert.Equal(32, s.TriangleCount);
         Assert.Equal(502.5, s.ElevationAt(8_500_025, 4_700_013)!.Value, 6);
@@ -64,8 +70,11 @@ public class SurfaceTests
         f ??= (x, y) => 0.1 * x + 0.05 * y + 10;
         var pts = new List<Point3>();
         for (double y = 0; y <= size; y += step)
+        {
             for (double x = 0; x <= size; x += step)
                 pts.Add(new Point3(x, y, f(x, y)));
+        }
+
         return new Surface("plane", pts);
     }
 
@@ -133,8 +142,11 @@ public class GradingTests
     {
         var pts = new List<Point3>();
         for (double y = -size; y <= size; y += 5)
+        {
             for (double x = -size; x <= size; x += 5)
                 pts.Add(new Point3(x, y, z));
+        }
+
         return new Surface("flat", pts);
     }
 
@@ -178,8 +190,11 @@ public class GradingTests
     {
         var pts = new List<Point3>();
         for (double y = -60; y <= 60; y += 5)
+        {
             for (double x = -60; x <= 60; x += 5)
                 pts.Add(new Point3(x, y, 100 + 0.1 * x));
+        }
+
         var eg = new Surface("incl", pts);
         var p = Square(20, 90);
         var platforms = new List<Platform> { p };
@@ -201,6 +216,7 @@ public class GradingTests
         var design = DesignSurfaceBuilder.Build(eg, new[] { p }, 1.0, "design");
         Assert.Equal(2, design.ElevationAt(3, 4)!.Value, 6);
         Assert.Null(design.ElevationAt(40, 40));
+
         // откос 1:1.5 от z = 2 при x = 10 → догонване при x = 13; отвъд него проектна повърхнина няма
         Assert.Equal(2 - 2.4 / 1.5, design.ElevationAt(12.4, 0)!.Value, 6);
         Assert.NotNull(design.ElevationAt(12.95, 0));

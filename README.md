@@ -29,6 +29,16 @@ dotnet test
 
 За бърз старт: **Файл → Примерен терен**.
 
+## Стил на кода
+
+[StyleCop.Analyzers](https://github.com/DotNetAnalyzers/StyleCopAnalyzers) е включен за всички проекти
+(`Directory.Build.props`). Правилата са съобразени със стила на проекта – изключенията и причините за тях са
+в `.editorconfig`. Локално нарушенията са предупреждения, а в CI – грешки. Автоматични поправки:
+
+```
+dotnet format analyzers --severity warn
+```
+
 ## Повърхнини
 
 - **Импорт на точки** (`Номер X Y Z`, `X Y Z`; разделители интервал/таб/`;`/`,`) –

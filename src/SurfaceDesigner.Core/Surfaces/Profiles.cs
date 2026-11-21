@@ -35,8 +35,10 @@ public static class Alignment
                 double t = Math.Clamp(station - s, 0, len);
                 return (line[i - 1] + dir * t, dir);
             }
+
             s += len;
         }
+
         return (line[^1], new Point2(1, 0));
     }
 
@@ -107,6 +109,7 @@ public static class ProfileSampler
                 double u = Point2.Cross(w, d) / den;
                 if (t > 0 && t < 1 && u >= -1e-12 && u <= 1 + 1e-12) ts.Add(t);
             }
+
             ts.Sort();
 
             double? prevT = null;
@@ -121,13 +124,16 @@ public static class ProfileSampler
                     if (surface.ElevationAt(pm.X, pm.Y) is null && result.Count > 0 && result[^1].Z is not null)
                         result.Add(new ProfilePoint(station0 + tm * len, pm.X, pm.Y, null));
                 }
+
                 if (i > 1 && t == 0) { prevT = t; continue; } // общ връх с предишната отсечка
                 var pt = a + d * t;
                 result.Add(new ProfilePoint(station0 + t * len, pt.X, pt.Y, surface.ElevationAt(pt.X, pt.Y)));
                 prevT = t;
             }
+
             station0 += len;
         }
+
         return result;
     }
 
@@ -143,6 +149,7 @@ public static class ProfileSampler
             double t = span > 0 ? (station - p0.Station) / span : 0;
             return p0.Z + (p1.Z - p0.Z) * Math.Clamp(t, 0, 1);
         }
+
         return profile.Count > 0 && Math.Abs(profile[^1].Station - station) < 1e-9 ? profile[^1].Z : null;
     }
 
@@ -159,6 +166,7 @@ public static class ProfileSampler
         {
             double s0 = stations[i - 1], s1 = stations[i];
             double sm = (s0 + s1) / 2;
+
             // и двете повърхнини трябва да са дефинирани в целия интервал
             if (ElevationAtStation(existing, sm) is null || ElevationAtStation(design, sm) is null) continue;
             var e0 = ElevationAtStation(existing, s0); var e1 = ElevationAtStation(existing, s1);
@@ -179,6 +187,7 @@ public static class ProfileSampler
                 if (a2 > 0) fill += a2; else cut -= a2;
             }
         }
+
         return new SectionAreas(cut, fill);
     }
 }

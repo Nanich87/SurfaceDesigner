@@ -1,0 +1,72 @@
+root = true
+
+[*]
+charset = utf-8
+indent_style = space
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+[*.{csproj,props,targets,xaml,xml,json,yml}]
+indent_size = 2
+
+[*.cs]
+indent_size = 4
+
+# ---------------------------------------------------------------------------
+# StyleCop – правилата са съобразени със стила на проекта.
+# Изключени са само правилата, които противоречат на съзнателно избран стил.
+# ---------------------------------------------------------------------------
+
+# Полета с префикс „_“ вместо „this.“
+dotnet_diagnostic.SA1101.severity = none   # Prefix local calls with this
+dotnet_diagnostic.SA1309.severity = none   # Field names must not begin with underscore
+
+# Файлови namespace-и с using извън тях (стандарт в .NET)
+dotnet_diagnostic.SA1200.severity = none   # Using directives must be placed correctly
+
+# Без заглавен коментар с авторски права във всеки файл
+dotnet_diagnostic.SA1633.severity = none   # File must have header
+
+# Кратките проверки остават на един ред: if (x) return;
+dotnet_diagnostic.SA1501.severity = none   # Statement must not be on a single line
+dotnet_diagnostic.SA1503.severity = none   # Braces must not be omitted
+dotnet_diagnostic.SA1520.severity = none   # Use braces consistently
+dotnet_diagnostic.SA1107.severity = none   # Code must not contain multiple statements on one line
+
+# Геометричните формули са по-четими без допълнителни скоби
+dotnet_diagnostic.SA1407.severity = none   # Arithmetic expressions must declare precedence
+
+# Малки свързани типове в един файл (напр. Geometry/Primitives.cs)
+dotnet_diagnostic.SA1402.severity = none   # File may only contain a single type
+dotnet_diagnostic.SA1649.severity = none   # File name must match first type name
+
+# Членовете са групирани по функционалност (раздели с коментари), а не по достъп
+dotnet_diagnostic.SA1201.severity = none   # Elements must appear in the correct order
+dotnet_diagnostic.SA1202.severity = none   # Elements must be ordered by access
+dotnet_diagnostic.SA1203.severity = none   # Constants must appear before fields
+dotnet_diagnostic.SA1204.severity = none   # Static elements must appear before instance elements
+dotnet_diagnostic.SA1214.severity = none   # Readonly fields must appear before non-readonly fields
+
+# Многоредови аргументи (напр. съобщения, съставени от няколко низа)
+dotnet_diagnostic.SA1118.severity = none   # Parameter must not span multiple lines
+
+# "" е предпочетено пред string.Empty
+dotnet_diagnostic.SA1122.severity = none   # Use string.Empty for empty strings
+
+# XML документацията не се генерира като файл
+dotnet_diagnostic.SA0001.severity = none   # XML comment analysis disabled
+
+# Документацията е на български и се пише там, където носи информация.
+# Тези правила изискват шаблонни английски фрази („Gets or sets…“) или празни тагове.
+dotnet_diagnostic.SA1600.severity = none   # Elements must be documented
+dotnet_diagnostic.SA1601.severity = none   # Partial elements must be documented
+dotnet_diagnostic.SA1602.severity = none   # Enumeration items must be documented
+dotnet_diagnostic.SA1604.severity = none   # Element documentation must have summary
+dotnet_diagnostic.SA1611.severity = none   # Element parameters must be documented
+dotnet_diagnostic.SA1615.severity = none   # Element return value must be documented
+dotnet_diagnostic.SA1623.severity = none   # Property summary documentation must match accessors
+dotnet_diagnostic.SA1629.severity = none   # Documentation text must end with a period
+dotnet_diagnostic.SA1642.severity = none   # Constructor summary documentation must begin with standard text
+
+# Без запетая след последния елемент на многоредов инициализатор
+dotnet_diagnostic.SA1413.severity = none   # Use trailing comma in multi-line initializers

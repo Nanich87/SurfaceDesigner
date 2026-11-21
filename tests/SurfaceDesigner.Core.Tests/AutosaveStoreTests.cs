@@ -6,6 +6,7 @@ public sealed class AutosaveStoreTests : IDisposable
 {
     private readonly string _dir = Path.Combine(Path.GetTempPath(), "sd-autosave-" + Guid.NewGuid().ToString("N"));
 
+    /// <inheritdoc/>
     public void Dispose()
     {
         try { Directory.Delete(_dir, recursive: true); } catch (IOException) { }
@@ -23,8 +24,8 @@ public sealed class AutosaveStoreTests : IDisposable
     {
         using (var crashed = new AutosaveStore(_dir))
             Assert.True(crashed.Save(Json("Терен"), @"C:\proj\a.sdproj", crashed.Generation));
-        // Dispose без Clear = сесията е прекъсната
 
+        // Dispose без Clear = сесията е прекъсната
         using var next = new AutosaveStore(_dir);
         var entry = Assert.Single(next.FindRecoverable());
         Assert.Equal(@"C:\proj\a.sdproj", entry.OriginalPath);
@@ -80,6 +81,7 @@ public sealed class AutosaveStoreTests : IDisposable
             id = s.SessionId;
             s.Save(Json("A"), null, s.Generation);
         }
+
         // Изключване на тока: заключващият файл може да остане, но никой не го държи отворен
         File.WriteAllText(Path.Combine(_dir, id + ".lock"), "");
 

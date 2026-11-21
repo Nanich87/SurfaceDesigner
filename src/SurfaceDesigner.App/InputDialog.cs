@@ -96,6 +96,9 @@ internal sealed class InputDialog : Window
 internal static class NumberParser
 {
     public static bool TryParse(string? text, out double value) =>
-        double.TryParse((text ?? "").Trim().Replace(',', '.'), System.Globalization.NumberStyles.Float,
-            System.Globalization.CultureInfo.InvariantCulture, out value) && double.IsFinite(value);
+        double.TryParse(
+            (text ?? "").Trim().Replace(',', '.'),
+            System.Globalization.NumberStyles.Float,
+            System.Globalization.CultureInfo.InvariantCulture,
+            out value) && double.IsFinite(value);
 }

@@ -5,6 +5,7 @@ namespace SurfaceDesigner.App;
 
 public partial class App : Application
 {
+    /// <inheritdoc/>
     protected override void OnStartup(StartupEventArgs e)
     {
         // Десетична точка навсякъде в интерфейса (въвеждането приема и запетая)

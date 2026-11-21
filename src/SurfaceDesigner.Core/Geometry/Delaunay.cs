@@ -40,7 +40,8 @@ public static class Delaunay
         private readonly int[] _edgeStack = new int[1024];
         private int _trianglesLen;
         private int _hullStart;
-        private double _cx, _cy;
+        private double _cx;
+        private double _cy;
 
         public Builder(double[] coords)
         {
@@ -73,6 +74,7 @@ public static class Delaunay
                 if (y > maxY) maxY = y;
                 ids[i] = i;
             }
+
             double cx = (minX + maxX) / 2, cy = (minY + maxY) / 2;
 
             int i0 = 0, i1 = -1, i2 = -1;
@@ -82,6 +84,7 @@ public static class Delaunay
                 double d = Dist(cx, cy, c[2 * i], c[2 * i + 1]);
                 if (d < minDist) { i0 = i; minDist = d; }
             }
+
             double i0x = c[2 * i0], i0y = c[2 * i0 + 1];
 
             minDist = double.PositiveInfinity;
@@ -91,6 +94,7 @@ public static class Delaunay
                 double d = Dist(i0x, i0y, c[2 * i], c[2 * i + 1]);
                 if (d < minDist && d > 0) { i1 = i; minDist = d; }
             }
+
             if (i1 < 0) return Array.Empty<int>();
             double i1x = c[2 * i1], i1y = c[2 * i1 + 1];
 
@@ -101,6 +105,7 @@ public static class Delaunay
                 double r = Circumradius(i0x, i0y, i1x, i1y, c[2 * i], c[2 * i + 1]);
                 if (r < minRadius) { i2 = i; minRadius = r; }
             }
+
             if (i2 < 0 || double.IsInfinity(minRadius) || double.IsNaN(minRadius))
                 return Array.Empty<int>(); // всички точки са колинеарни
             double i2x = c[2 * i2], i2y = c[2 * i2 + 1];
@@ -162,6 +167,7 @@ public static class Delaunay
                     e = q;
                     if (e == start) { e = -1; break; }
                 }
+
                 if (e == -1) continue; // почти дублирана точка
 
                 int t = AddTriangle(e, i, _hullNext[e], -1, -1, _hullTri[e]);
@@ -240,10 +246,14 @@ public static class Delaunay
                 int p1 = _triangles[bl];
 
                 bool illegal = InCircle(
-                    c[2 * p0], c[2 * p0 + 1],
-                    c[2 * pr], c[2 * pr + 1],
-                    c[2 * pl], c[2 * pl + 1],
-                    c[2 * p1], c[2 * p1 + 1]);
+                    c[2 * p0],
+                    c[2 * p0 + 1],
+                    c[2 * pr],
+                    c[2 * pr + 1],
+                    c[2 * pl],
+                    c[2 * pl + 1],
+                    c[2 * p1],
+                    c[2 * p1 + 1]);
 
                 if (illegal)
                 {
@@ -258,8 +268,10 @@ public static class Delaunay
                         {
                             if (_hullTri[e] == bl) { _hullTri[e] = a; break; }
                             e = _hullPrev[e];
-                        } while (e != _hullStart);
+                        }
+                        while (e != _hullStart);
                     }
+
                     Link(a, hbl);
                     Link(b, _halfedges[ar]);
                     Link(ar, bl);
@@ -273,6 +285,7 @@ public static class Delaunay
                     a = _edgeStack[--i];
                 }
             }
+
             return ar;
         }
 

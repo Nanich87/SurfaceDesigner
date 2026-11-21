@@ -84,6 +84,7 @@ public static class LandXmlReader
                 if (withZ.Count < breaklines.Count)
                     messages.Add($"„{name}“: {breaklines.Count - withZ.Count} структурни линии без коти (PntList2D) – пропуснати.");
             }
+
             if (faces.Count == 0) messages.Add($"„{name}“: няма триъгълници – импортирани {points.Count} точки, триангулирани наново.");
             if (hidden > 0) messages.Add($"„{name}“: пропуснати {hidden} невидими триъгълника.");
             surfaces.Add(surface);
@@ -101,6 +102,7 @@ public static class LandXmlReader
                 messages.Add($"Няма повърхнини – импортирани {cg.Count} точки (CgPoints) като нова повърхнина.");
             }
         }
+
         if (surfaces.Count == 0) messages.Add("Във файла няма TIN повърхнини или точки.");
         return new LandXmlImportResult(surfaces, messages);
     }
@@ -108,8 +110,12 @@ public static class LandXmlReader
     /// <summary>Повърхнина, чиято триангулация съвпада точно с дадените триъгълници.</summary>
     private sealed record SourceBreakline(string Name, List<Point3> Vertices);
 
-    private static Surface FromTin(string name, List<(string Id, Point3 P)> points, List<string[]> faceIds,
-                                   List<SourceBreakline> sourceBreaklines, List<string> messages)
+    private static Surface FromTin(
+        string name,
+        List<(string Id, Point3 P)> points,
+        List<string[]> faceIds,
+        List<SourceBreakline> sourceBreaklines,
+        List<string> messages)
     {
         // само използваните точки; дублирани координати (до 0.1 мм) – към първата
         var used = new HashSet<string>(faceIds.SelectMany(f => f));
@@ -126,6 +132,7 @@ public static class LandXmlReader
                 pts.Add(p);
                 byKey[key] = idx;
             }
+
             byId[id] = idx;
         }
 
@@ -138,10 +145,12 @@ public static class LandXmlReader
                 missing++;
                 continue;
             }
+
             double area = Point2.Cross(pts[b].XY - pts[a].XY, pts[c].XY - pts[a].XY);
             if (a == b || b == c || a == c || Math.Abs(area) < 1e-12) { degenerate++; continue; }
             faces.Add(area > 0 ? (a, b, c) : (a, c, b)); // обратно на часовниковата стрелка
         }
+
         if (missing > 0) messages.Add($"„{name}“: {missing} триъгълника сочат към несъществуващи точки – пропуснати.");
         if (degenerate > 0) messages.Add($"„{name}“: {degenerate} изродени триъгълника – пропуснати.");
 
@@ -174,17 +183,21 @@ public static class LandXmlReader
             edges.Add(ConstrainedDelaunay.Key(b, c));
             edges.Add(ConstrainedDelaunay.Key(c, a));
         }
+
         if (unmapped > 0) messages.Add($"„{name}“: {unmapped} триъгълника използват точки извън триангулацията.");
         int failed = 0;
         foreach (var (a, b) in edges)
             if (!mesh.HasEdge(a, b) && !mesh.InsertConstraint(a, b, restoreDelaunay: false))
             {
                 if (failed++ == 0)
+                {
                     messages.Add(string.Create(Ci, $"„{name}“: реброто {verts[a].XY}–{verts[b].XY} не може да се възпроизведе: {mesh.LastFailure}") +
                         (mesh.LastFailure == "пресича друго ограничение"
                             ? " – ребра от източника се пресичат, т.е. файлът съдържа застъпващи се (обърнати) триъгълници."
                             : "."));
+                }
             }
+
         surface.SetEdgeSwaps(mesh.FlipLog!.Select(f => new EdgeSwap(f.A, f.B)));
 
         // 2. Контурите на множеството от триъгълници → граници (ако не покрива цялата изпъкнала обвивка)
@@ -194,17 +207,22 @@ public static class LandXmlReader
         // 3. Проверка
         int diff = CompareTriangles(surface, pts, faces);
         if (diff == 0 && failed == 0)
+        {
             messages.Add($"„{name}“: {pts.Count} точки, {faces.Count} триъгълника – триангулацията е възпроизведена точно" +
                          (surface.EdgeSwaps.Count > 0 ? $" ({surface.EdgeSwaps.Count} завъртания на ребра)" : "") +
                          (surface.Breaklines.Count > 0 ? $", {surface.Breaklines.Count} структурни линии" : "") +
                          (surface.Boundaries.Count > 0 ? $", {surface.Boundaries.Count} граници." : "."));
+        }
         else
+        {
             messages.Add($"„{name}“: {pts.Count} точки, {faces.Count} триъгълника – {diff} триъгълника се различават от източника " +
                          $"(невъзпроизведени ребра: {failed}).");
+        }
+
         return surface;
     }
 
-    private static (long, long) Key(Point2 p) => ((long)Math.Round(p.X * 1e4), (long)Math.Round(p.Y * 1e4));
+    private static (long X, long Y) Key(Point2 p) => ((long)Math.Round(p.X * 1e4), (long)Math.Round(p.Y * 1e4));
 
     /// <summary>
     /// Структурните линии от източника, проследени по ребрата на триъгълниците: всеки връх се свързва с точка на TIN
@@ -212,8 +230,12 @@ public static class LandXmlReader
     /// с други линии). Отсечки, които не са ребра в източника, се изпускат (линията се разделя) – иначе биха
     /// променили триангулацията. Котите са тези на точките на TIN.
     /// </summary>
-    private static List<Breakline> BreaklinesAlongFaces(string surfaceName, List<SourceBreakline> source,
-                                                        List<Point3> pts, List<(int A, int B, int C)> faces, List<string> messages)
+    private static List<Breakline> BreaklinesAlongFaces(
+        string surfaceName,
+        List<SourceBreakline> source,
+        List<Point3> pts,
+        List<(int A, int B, int C)> faces,
+        List<string> messages)
     {
         var result = new List<Breakline>();
         if (source.Count == 0) return result;
@@ -226,19 +248,27 @@ public static class LandXmlReader
             if (!grid.TryGetValue(c, out var l)) grid[c] = l = new List<int>();
             l.Add(i);
         }
+
         int Match(Point2 p)
         {
             long cx = (long)Math.Floor(p.X / cell), cy = (long)Math.Floor(p.Y / cell);
             int best = -1;
             double bestD = tol;
             for (long dy = -1; dy <= 1; dy++)
+            {
                 for (long dx = -1; dx <= 1; dx++)
+                {
                     if (grid.TryGetValue((cx + dx, cy + dy), out var l))
+                    {
                         foreach (int i in l)
                         {
                             double d = Point2.Distance(pts[i].XY, p);
                             if (d <= bestD) { bestD = d; best = i; }
                         }
+                    }
+                }
+            }
+
             return best;
         }
 
@@ -248,13 +278,14 @@ public static class LandXmlReader
             if (!adj.TryGetValue(a, out var s)) adj[a] = s = new HashSet<int>();
             s.Add(b);
         }
+
         foreach (var (a, b, c) in faces) { Link(a, b); Link(b, a); Link(b, c); Link(c, b); Link(c, a); Link(a, c); }
 
         // път по ребрата от a до b, през точки върху отсечката a–b (без a); null – няма такъв път
         List<int>? Chain(int a, int b)
         {
-            var A = pts[a].XY;
-            var d = pts[b].XY - A;
+            var a1 = pts[a].XY;
+            var d = pts[b].XY - a1;
             double len2 = Point2.Dot(d, d), len = Math.Sqrt(len2);
             var path = new List<int>();
             int cur = a;
@@ -267,17 +298,19 @@ public static class LandXmlReader
                 double bestT = 2;
                 foreach (int c in nb)
                 {
-                    var v = pts[c].XY - A;
+                    var v = pts[c].XY - a1;
                     double t = Point2.Dot(v, d) / len2;
                     if (t <= tCur + 1e-12 || t >= 1) continue;
                     if (Math.Abs(Point2.Cross(d, v)) / len > tol) continue;
                     if (t < bestT) { bestT = t; best = c; }
                 }
+
                 if (best < 0) return null;
                 path.Add(best);
                 cur = best;
                 tCur = bestT;
             }
+
             return cur == b ? path : null;
         }
 
@@ -291,6 +324,7 @@ public static class LandXmlReader
                 if (run.Count >= 2) parts.Add(run);
                 run = new List<int>();
             }
+
             foreach (var v in bl.Vertices)
             {
                 int cur = Match(v.XY);
@@ -301,6 +335,7 @@ public static class LandXmlReader
                 if (path == null) { dropped++; Flush(); run.Add(cur); }
                 else run.AddRange(path);
             }
+
             Flush();
             for (int k = 0; k < parts.Count; k++)
                 result.Add(new Breakline(parts.Count == 1 ? bl.Name : $"{bl.Name} (част {k + 1})", parts[k].Select(i => pts[i])));
@@ -352,6 +387,7 @@ public static class LandXmlReader
                     next.RemoveAt(next.Count - 1);
                     cur = n;
                 }
+
                 if (cur == start && loop.Count >= 3) loops.Add(loop);
             }
         }
@@ -361,6 +397,7 @@ public static class LandXmlReader
         for (int i = 0; i < loops.Count; i++)
         {
             var l = loops[i];
+
             // точка непосредствено отляво на първото ребро – в областта на триъгълниците
             var a = pts[l[0]].XY; var b = pts[l[1]].XY;
             var d = b - a;
@@ -374,6 +411,7 @@ public static class LandXmlReader
             string label = type switch { BoundaryType.Outer => "Контур", BoundaryType.Hide => "Дупка", _ => "Остров" };
             items.Add((depth, new SurfaceBoundary($"{label} {i + 1} (LandXML)", type, polys[i].Vertices)));
         }
+
         return items.OrderBy(t => t.Depth).Select(t => t.Boundary).ToList();
     }
 
@@ -387,6 +425,7 @@ public static class LandXmlReader
             Array.Sort(arr);
             return string.Join(";", arr);
         }
+
         var source = new HashSet<string>(faces.Select(f => T(K(pts[f.A].XY), K(pts[f.B].XY), K(pts[f.C].XY))));
         var v = s.Vertices;
         var t = s.Triangles;

@@ -35,6 +35,7 @@ public class BoundaryTests
             else if (!expectedVisible(x, y))
                 Assert.Null(zc);
         }
+
         Assert.True(inside > 20, $"Твърде малко проби вътре: {inside}");
     }
 
@@ -84,10 +85,14 @@ public class BoundaryTests
     {
         var pts = new List<Point3>();
         for (int y = 0; y <= 10; y++)
+        {
             for (int x = 0; x <= 10; x++)
                 pts.Add(new Point3(x, y, Math.Sin(x) + Math.Cos(y)));
+        }
+
         var original = new Surface("g", pts);
         var s = original.Clone();
+
         // по линии на мрежата и по диагонали през възли
         var poly = Poly(new(2, 2), new(8, 2), new(8, 5), new(5, 8), new(2, 8));
         s.AddBoundary(new SurfaceBoundary("B", BoundaryType.Outer, poly.Vertices));
@@ -130,8 +135,12 @@ public class BoundaryTests
         s.AddBoundary(new SurfaceBoundary("star", type, star));
         var poly = Poly(star);
 
-        AssertNonDestructive(original, s, (x, y) =>
-            (type == BoundaryType.Outer ? poly.Contains(x, y) : !poly.Contains(x, y)) && !NearBoundary(poly, x, y), seed);
+        AssertNonDestructive(
+            original,
+            s,
+            (x, y) =>
+                (type == BoundaryType.Outer ? poly.Contains(x, y) : !poly.Contains(x, y)) && !NearBoundary(poly, x, y),
+            seed);
 
         // площта = площта на сечението (по Монте Карло върху оригинала – тук проверяваме сумата)
         double inside = s.GetStatistics().Area2D;
@@ -161,8 +170,11 @@ public class BoundaryTests
     {
         var pts = new List<Point3>();
         for (double y = -60; y <= 60; y += 5)
+        {
             for (double x = -60; x <= 60; x += 5)
                 pts.Add(new Point3(x, y, 0));
+        }
+
         var eg = new Surface("eg", pts);
         eg.AddBoundary(new SurfaceBoundary("дупка", BoundaryType.Hide, new Point2[] { new(-2, -10), new(2, -10), new(2, 10), new(-2, 10) }));
         var p = new Platform { Boundary = new() { new(-5, -5), new(5, -5), new(5, 5), new(-5, 5) }, BaseElevation = 1, FillSlopeRatio = 1.5 };

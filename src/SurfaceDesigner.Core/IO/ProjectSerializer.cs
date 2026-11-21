@@ -82,17 +82,8 @@ public static class ProjectSerializer
                 MajorContourEvery = s.MajorContourEvery,
                 Link = s.GradingSource is { } g ? new LinkDto { Existing = g.ExistingSurfaceName, GridStep = g.GridStep, ZoneOnly = g.ZoneOnly } : null,
                 Points = s.Points.Select(p => new[] { p.X, p.Y, p.Z }).ToList(),
-                Breaklines = s.Breaklines.Count == 0 ? null : s.Breaklines.Select(b => new BreaklineDto
-                {
-                    Name = b.Name,
-                    Points = b.Vertices.Select(p => new[] { p.X, p.Y, p.Z }).ToList(),
-                }).ToList(),
-                Boundaries = s.Boundaries.Count == 0 ? null : s.Boundaries.Select(b => new BoundaryDto
-                {
-                    Name = b.Name,
-                    Type = b.Type.ToString(),
-                    Points = b.Vertices.Select(p => new[] { p.X, p.Y }).ToList(),
-                }).ToList(),
+                Breaklines = s.Breaklines.Count == 0 ? null : s.Breaklines.Select(b => new BreaklineDto { Name = b.Name, Points = b.Vertices.Select(p => new[] { p.X, p.Y, p.Z }).ToList(), }).ToList(),
+                Boundaries = s.Boundaries.Count == 0 ? null : s.Boundaries.Select(b => new BoundaryDto { Name = b.Name, Type = b.Type.ToString(), Points = b.Vertices.Select(p => new[] { p.X, p.Y }).ToList(), }).ToList(),
                 EdgeSwaps = s.EdgeSwaps.Count == 0 ? null : s.EdgeSwaps.Select(e => new[] { e.A.X, e.A.Y, e.B.X, e.B.Y }).ToList(),
             }).ToList(),
             Platforms = project.Platforms.Select(p => new PlatformDto
@@ -116,12 +107,14 @@ public static class ProjectSerializer
         var project = new Project { ExistingSurfaceName = dto.ExistingSurfaceName, View = dto.View ?? new ViewSettings() };
         foreach (var s in dto.Surfaces ?? new())
         {
-            var surface = new Surface(s.Name ?? "Повърхнина",
+            var surface = new Surface(
+                s.Name ?? "Повърхнина",
                 (s.Points ?? new()).Where(a => a.Length >= 3).Select(a => new Point3(a[0], a[1], a[2])))
             {
                 MaxEdgeLength = s.MaxEdgeLength,
                 IsDesign = s.IsDesign,
                 IsVisible = s.IsVisible ?? true,
+
                 // собствени настройки; при по-стари проекти – общите за проекта (или стойностите по подразбиране)
                 ContourInterval = s.ContourInterval ?? dto.ContourInterval ?? 0.5,
                 MajorContourEvery = s.MajorContourEvery ?? dto.MajorContourEvery ?? 5,
@@ -134,8 +127,10 @@ public static class ProjectSerializer
             var boundaries = (s.Boundaries ?? new())
                 .Select(b => (b.Name, b.Type, Pts: (b.Points ?? new()).Where(a => a.Length >= 2).Select(a => new Point2(a[0], a[1])).ToList()))
                 .Where(b => b.Pts.Count >= 3)
-                .Select(b => new SurfaceBoundary(b.Name ?? "Граница",
-                    Enum.TryParse<BoundaryType>(b.Type, out var t) ? t : BoundaryType.Outer, b.Pts));
+                .Select(b => new SurfaceBoundary(
+                    b.Name ?? "Граница",
+                    Enum.TryParse<BoundaryType>(b.Type, out var t) ? t : BoundaryType.Outer,
+                    b.Pts));
             surface.SetBoundaries(boundaries);
             if (s.Link is { Existing: { } linkEg } link && link.GridStep > 0)
                 surface.GradingSource = new GradingSource(linkEg, link.GridStep, link.ZoneOnly);
@@ -143,6 +138,7 @@ public static class ProjectSerializer
                 .Select(a => new EdgeSwap(new Point2(a[0], a[1]), new Point2(a[2], a[3]))));
             project.Surfaces.Add(surface);
         }
+
         foreach (var p in dto.Platforms ?? new())
         {
             project.Platforms.Add(new Platform
@@ -157,6 +153,7 @@ public static class ProjectSerializer
                 FillSlopeRatio = p.FillSlopeRatio,
             });
         }
+
         return project;
     }
 
@@ -164,8 +161,8 @@ public static class ProjectSerializer
     {
         public int Version { get; set; }
         public string? ExistingSurfaceName { get; set; }
-        public ViewSettings? View { get; set; }        // липсва в по-стари проекти → по подразбиране
-        public double? ContourInterval { get; set; }   // само за четене на проекти с обща стъпка
+        public ViewSettings? View { get; set; } // липсва в по-стари проекти → по подразбиране
+        public double? ContourInterval { get; set; } // само за четене на проекти с обща стъпка
         public int? MajorContourEvery { get; set; }
         public List<SurfaceDto>? Surfaces { get; set; }
         public List<PlatformDto>? Platforms { get; set; }

@@ -35,8 +35,13 @@ public sealed class AutosaveStore : IDisposable
         Directory.CreateDirectory(directory);
         DirectoryPath = directory;
         SessionId = Guid.NewGuid().ToString("N");
-        _lock = new FileStream(Path.Combine(directory, SessionId + LockExt), FileMode.CreateNew, FileAccess.Write,
-            FileShare.None, 1, FileOptions.DeleteOnClose);
+        _lock = new FileStream(
+            Path.Combine(directory, SessionId + LockExt),
+            FileMode.CreateNew,
+            FileAccess.Write,
+            FileShare.None,
+            1,
+            FileOptions.DeleteOnClose);
     }
 
     public static string DefaultDirectory =>
@@ -99,8 +104,10 @@ public sealed class AutosaveStore : IDisposable
             {
                 // Без метаданни копието пак е използваемо – като незаписан проект
             }
+
             result.Add(new AutosaveEntry(file, original, savedAt));
         }
+
         return result.OrderByDescending(e => e.SavedAtUtc).ToList();
     }
 

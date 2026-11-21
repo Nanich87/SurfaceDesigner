@@ -62,8 +62,10 @@ public static class LandXmlWriter
                         w.WriteEndElement();
                         w.WriteEndElement();
                     }
+
                     w.WriteEndElement(); // Boundaries
                 }
+
                 if (s.Breaklines.Count > 0)
                 {
                     w.WriteStartElement("Breaklines", Ns);
@@ -77,8 +79,10 @@ public static class LandXmlWriter
                         w.WriteEndElement();
                         w.WriteEndElement();
                     }
+
                     w.WriteEndElement(); // Breaklines
                 }
+
                 w.WriteEndElement(); // SourceData
             }
 
@@ -96,11 +100,13 @@ public static class LandXmlWriter
                 var p = s.Vertices[i];
                 w.WriteStartElement("P", Ns);
                 w.WriteAttributeString("id", n.ToString(ci));
+
                 // LandXML: северна координата, източна, кота
                 w.WriteString(string.Create(ci, $"{p.Y:F4} {p.X:F4} {p.Z:F4}"));
                 w.WriteEndElement();
                 n++;
             }
+
             w.WriteEndElement();
 
             w.WriteStartElement("Faces", Ns);
@@ -110,11 +116,13 @@ public static class LandXmlWriter
                 w.WriteString(string.Create(ci, $"{id[tris[k]]} {id[tris[k + 1]]} {id[tris[k + 2]]}"));
                 w.WriteEndElement();
             }
+
             w.WriteEndElement();
 
             w.WriteEndElement(); // Definition
             w.WriteEndElement(); // Surface
         }
+
         w.WriteEndElement(); // Surfaces
         w.WriteEndElement(); // LandXML
         w.WriteEndDocument();

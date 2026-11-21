@@ -51,6 +51,7 @@ public partial class MainWindow : Window
         {
             _autosave = null; // без автоматичен запис, но програмата работи
         }
+
         _designTimer.Tick += async (_, _) =>
         {
             _designTimer.Stop();
@@ -94,7 +95,6 @@ public partial class MainWindow : Window
     // =====================================================================
     //  Общи помощни методи
     // =====================================================================
-
     private Platform? SelectedPlatform => PlatformList.SelectedItem as Platform;
 
     private void RefreshAll(bool zoom = false)
@@ -176,13 +176,13 @@ public partial class MainWindow : Window
             _lastVolumes = null;
             ScheduleDesignRegeneration();
         }
+
         RefreshAll();
     }
 
     // =====================================================================
     //  Автоматично преизчисляване на свързаните проектни повърхнини
     // =====================================================================
-
     private readonly System.Windows.Threading.DispatcherTimer _designTimer = new() { Interval = TimeSpan.FromMilliseconds(250) };
     private int _designJob;
 
@@ -229,6 +229,7 @@ public partial class MainWindow : Window
                 Info($"„{d.Name}“ не може да се обнови: липсва теренът „{src.ExistingSurfaceName}“.");
                 continue;
             }
+
             string key = src.InputKey(eg, _project.Platforms);
             if (key == src.LastInputKey) continue; // входните данни не са се променили
 
@@ -285,15 +286,20 @@ public partial class MainWindow : Window
             DesignLinkBox.IsChecked = false;
             return;
         }
+
         if (!NumberParser.TryParse(DesignStepBox.Text, out var step) || step < 0.1) step = 1;
-        if (MessageBox.Show(this,
-                $"„{_active.Name}“ ще се преизчисли от терена „{eg.Name}“ и платформите и ще се обновява автоматично.\n" +
-                "Ръчните промени по нея ще бъдат заменени. Продължаване?",
-                "Свързване с платформите", MessageBoxButton.OKCancel, MessageBoxImage.Question) != MessageBoxResult.OK)
+        if (MessageBox.Show(
+            this,
+            $"„{_active.Name}“ ще се преизчисли от терена „{eg.Name}“ и платформите и ще се обновява автоматично.\n" +
+            "Ръчните промени по нея ще бъдат заменени. Продължаване?",
+            "Свързване с платформите",
+            MessageBoxButton.OKCancel,
+            MessageBoxImage.Question) != MessageBoxResult.OK)
         {
             DesignLinkBox.IsChecked = false;
             return;
         }
+
         PushUndo();
         _active.IsDesign = true;
         _active.GradingSource = new GradingSource(eg.Name, step, ZoneOnlyBox.IsChecked == true) { GeneratedVersion = _active.Version };
@@ -365,27 +371,36 @@ public partial class MainWindow : Window
         double sum = 0;
         int n = 0;
         for (double y = b.MinY + step / 2; y < b.MaxY; y += step)
+        {
             for (double x = b.MinX + step / 2; x < b.MaxX; x += step)
             {
                 if (!poly.Contains(x, y)) continue;
                 var z = s.ElevationAt(x, y);
                 if (z.HasValue) { sum += z.Value; n++; }
             }
+        }
+
         if (n == 0)
+        {
             foreach (var v in poly.Vertices)
                 if (s.ElevationAt(v.X, v.Y) is { } z) { sum += z; n++; }
+        }
+
         return n > 0 ? Math.Round(sum / n, 2) : 0;
     }
 
     // =====================================================================
     //  Файл
     // =====================================================================
-
     private bool ConfirmDiscard()
     {
         if (!_dirty) return true;
-        var r = MessageBox.Show(this, "Проектът има незаписани промени. Да се запишат ли?", "Surface Designer",
-            MessageBoxButton.YesNoCancel, MessageBoxImage.Question);
+        var r = MessageBox.Show(
+            this,
+            "Проектът има незаписани промени. Да се запишат ли?",
+            "Surface Designer",
+            MessageBoxButton.YesNoCancel,
+            MessageBoxImage.Question);
         if (r == MessageBoxResult.Cancel) return false;
         if (r == MessageBoxResult.Yes) return SaveProject(_projectPath);
         return true;
@@ -439,16 +454,23 @@ public partial class MainWindow : Window
             string bak = ProjectSerializer.BackupPath(path);
             if (!File.Exists(bak))
             {
-                MessageBox.Show(this, $"Проектът не може да се отвори:\n{path}\n\n{ex.Message}", "Грешка",
-                    MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(
+                    this,
+                    $"Проектът не може да се отвори:\n{path}\n\n{ex.Message}",
+                    "Грешка",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
                 return false;
             }
 
-            var answer = MessageBox.Show(this,
+            var answer = MessageBox.Show(
+                this,
                 $"Проектът не може да се отвори:\n{path}\n\n{ex.Message}\n\n" +
                 $"Има резервно копие с предишната записана версия от {File.GetLastWriteTime(bak):dd.MM.yyyy HH:mm}. " +
                 "Да се отвори ли то?\n\nПри „Запиши“ то ще замени повредения файл.",
-                "Повреден проект", MessageBoxButton.YesNo, MessageBoxImage.Warning);
+                "Повреден проект",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Warning);
             if (answer != MessageBoxResult.Yes) return false;
 
             try
@@ -457,8 +479,12 @@ public partial class MainWindow : Window
             }
             catch (Exception bakEx)
             {
-                MessageBox.Show(this, $"И резервното копие не може да се отвори:\n{bak}\n\n{bakEx.Message}", "Грешка",
-                    MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(
+                    this,
+                    $"И резервното копие не може да се отвори:\n{bak}\n\n{bakEx.Message}",
+                    "Грешка",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
                 return false;
             }
 
@@ -477,7 +503,6 @@ public partial class MainWindow : Window
     // ---------------------------------------------------------------------
     //  Автоматичен запис
     // ---------------------------------------------------------------------
-
     private async Task AutosaveAsync()
     {
         if (_autosave == null || _autosaving || !_dirty || _changeVersion == _autosavedVersion) return;
@@ -519,11 +544,14 @@ public partial class MainWindow : Window
         foreach (var entry in entries)
         {
             string name = entry.OriginalPath != null ? Path.GetFileName(entry.OriginalPath) : "Нов (незаписан) проект";
-            var answer = MessageBox.Show(this,
+            var answer = MessageBox.Show(
+                this,
                 "Програмата не е била затворена нормално. Намерено е автоматично копие с незаписани промени:\n\n" +
                 $"{name}\nот {entry.SavedAtUtc.ToLocalTime():dd.MM.yyyy HH:mm}\n\n" +
                 "Да – възстанови го\nНе – изтрий копието\nОтказ – остави го за следващото стартиране",
-                "Възстановяване", MessageBoxButton.YesNoCancel, MessageBoxImage.Question);
+                "Възстановяване",
+                MessageBoxButton.YesNoCancel,
+                MessageBoxImage.Question);
 
             if (answer == MessageBoxResult.No) { _autosave.Discard(entry); continue; }
             if (answer != MessageBoxResult.Yes) continue;
@@ -532,14 +560,19 @@ public partial class MainWindow : Window
             try { project = ProjectSerializer.Load(entry.ProjectFile); }
             catch (Exception ex)
             {
-                MessageBox.Show(this, $"Копието не може да се отвори:\n{ex.Message}", "Грешка",
-                    MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(
+                    this,
+                    $"Копието не може да се отвори:\n{ex.Message}",
+                    "Грешка",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
                 continue;
             }
 
             LoadProject(project, entry.OriginalPath);
             MarkDirty();
             UpdateTitle();
+
             // Първо собствено копие, после изтриване на старото – промените не остават без копие нито за миг
             try
             {
@@ -551,6 +584,7 @@ public partial class MainWindow : Window
             Info($"Възстановено автоматично копие от {entry.SavedAtUtc.ToLocalTime():dd.MM.yyyy HH:mm}. Запишете проекта.");
             return true;
         }
+
         return false;
     }
 
@@ -566,6 +600,7 @@ public partial class MainWindow : Window
             if (dlg.ShowDialog(this) != true) return false;
             path = dlg.FileName;
         }
+
         ProjectSerializer.Save(_project, path);
         _projectPath = path;
         _dirty = false;
@@ -600,10 +635,13 @@ public partial class MainWindow : Window
         };
         if (dlg.ShowDialog(this) != true) return;
 
-        var geo = MessageBox.Show(this,
+        var geo = MessageBox.Show(
+            this,
             "Файлът в геодезическа координатна система ли е (X – север, Y – изток)?\n\n" +
             "Да – колоните се четат като „Номер X(север) Y(изток) H“\nНе – като „X(изток) Y(север) Z“",
-            "Импорт на точки", MessageBoxButton.YesNoCancel, MessageBoxImage.Question);
+            "Импорт на точки",
+            MessageBoxButton.YesNoCancel,
+            MessageBoxImage.Question);
         if (geo == MessageBoxResult.Cancel) return;
 
         var pts = PointFileReader.Read(dlg.FileName, geo == MessageBoxResult.Yes);
@@ -646,13 +684,18 @@ public partial class MainWindow : Window
                 s.Name = _project.UniqueSurfaceName(s.Name);
                 _project.Surfaces.Add(s);
             }
+
             _project.ExistingSurfaceName ??= result.Surfaces[0].Name;
             _active = result.Surfaces[0];
             DataChanged();
             View.ZoomExtents();
             Info($"Импортирани {result.Surfaces.Count} повърхнини от {Path.GetFileName(file)}.");
-            MessageBox.Show(this, string.Join("\n\n", result.Messages), "Импорт от LandXML",
-                MessageBoxButton.OK, MessageBoxImage.Information);
+            MessageBox.Show(
+                this,
+                string.Join("\n\n", result.Messages),
+                "Импорт от LandXML",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
         });
     }
 
@@ -661,8 +704,12 @@ public partial class MainWindow : Window
         if (!RequireActive()) return;
         var dlg = new SaveFileDialog { Filter = "Текстов файл (*.txt)|*.txt|CSV (*.csv)|*.csv", FileName = _active!.Name };
         if (dlg.ShowDialog(this) != true) return;
-        var geo = MessageBox.Show(this, "Запис в геодезическа система (X – север, Y – изток)?", "Експорт",
-            MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes;
+        var geo = MessageBox.Show(
+            this,
+            "Запис в геодезическа система (X – север, Y – изток)?",
+            "Експорт",
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Question) == MessageBoxResult.Yes;
         PointFileWriter.Write(dlg.FileName, _active.Points, geo);
         Info($"Записани {_active.Points.Count} точки.");
     }
@@ -687,6 +734,7 @@ public partial class MainWindow : Window
         sb.AppendLine("Колона;Ред;X център;Y център;Работна кота h, m;Изкоп, m3;Насип, m3");
         var ci = CultureInfo.InvariantCulture;
         for (int iy = 0; iy < g.Ny; iy++)
+        {
             for (int ix = 0; ix < g.Nx; ix++)
             {
                 int i = g.Index(ix, iy);
@@ -694,6 +742,8 @@ public partial class MainWindow : Window
                 var c = g.CellBounds(ix, iy).Center;
                 sb.AppendLine(string.Create(ci, $"{ix + 1};{iy + 1};{c.X:F3};{c.Y:F3};{g.MeanDepth[i]:F3};{g.Cut[i]:F3};{g.Fill[i]:F3}"));
             }
+        }
+
         sb.AppendLine(string.Create(ci, $";;;;Общо;{_lastVolumes.Cut:F3};{_lastVolumes.Fill:F3}"));
         File.WriteAllText(dlg.FileName, sb.ToString(), new UTF8Encoding(true));
         Info($"Картограмата е записана: {dlg.FileName}");
@@ -717,7 +767,6 @@ public partial class MainWindow : Window
     // =====================================================================
     //  Инструменти в плана
     // =====================================================================
-
     private void Tool_Checked(object sender, RoutedEventArgs e)
     {
         if (View == null) return;
@@ -753,6 +802,7 @@ public partial class MainWindow : Window
             if (model.Existing.ElevationAt(w.X, w.Y) is { } eg)
                 sb.Append(string.Create(CultureInfo.InvariantCulture, $"   h = {zd - eg:+0.000;-0.000;0.000}"));
         }
+
         CursorText.Text = sb.ToString();
     }
 
@@ -765,9 +815,13 @@ public partial class MainWindow : Window
             _project.Surfaces.Add(_active);
             _project.ExistingSurfaceName ??= _active.Name;
         }
+
         double def = _active.ElevationAt(w.X, w.Y) ?? (_active.Points.Count > 0 ? _active.Points[^1].Z : 0);
-        var z = InputDialog.AskNumber(this, "Нова точка",
-            string.Create(CultureInfo.InvariantCulture, $"Кота на точката (X = {w.X:F3}, Y = {w.Y:F3}):"), Math.Round(def, 3));
+        var z = InputDialog.AskNumber(
+            this,
+            "Нова точка",
+            string.Create(CultureInfo.InvariantCulture, $"Кота на точката (X = {w.X:F3}, Y = {w.Y:F3}):"),
+            Math.Round(def, 3));
         if (z == null) return;
         PushUndo();
         _active.AddPoint(new Point3(w.X, w.Y, z.Value));
@@ -812,6 +866,7 @@ public partial class MainWindow : Window
             Info(string.Create(CultureInfo.InvariantCulture, $"Полигон: площ {poly.Area:F2} m², периметър {poly.Perimeter:F2} m."));
             return;
         }
+
         if (mode == ToolMode.DrawPlatform) CreatePlatform(polygon);
         if (mode == ToolMode.DrawBreakline) CreateBreakline(polygon);
         if (mode == ToolMode.DrawBoundary) CreateBoundary(polygon);
@@ -833,7 +888,8 @@ public partial class MainWindow : Window
         View.SelectedPlatform = p;
         foreach (TabItem t in RightPanel.Items) if ((string)t.Header == "Вертикално планиране") RightPanel.SelectedItem = t;
         DataChanged();
-        Info(string.Create(CultureInfo.InvariantCulture,
+        Info(string.Create(
+            CultureInfo.InvariantCulture,
             $"Създадена „{p.Name}“: площ {poly.Area:F2} m², кота {p.BaseElevation:F2} (средна от терена)."));
     }
 
@@ -860,6 +916,7 @@ public partial class MainWindow : Window
             Info($"Контурът на „{p.Name}“ е променен ({p.Boundary.Count} върха).");
             return;
         }
+
         if (View.CutFill != null) { View.CutFill = null; View.RebuildScene(); } // картограмата вече не е актуална
         ScheduleDesignRegeneration();
         LoadPlatformFields();
@@ -869,7 +926,6 @@ public partial class MainWindow : Window
     // =====================================================================
     //  Повърхнини
     // =====================================================================
-
     private void SurfaceList_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
         if (_updatingUi) return;
@@ -878,10 +934,10 @@ public partial class MainWindow : Window
     }
 
     // ---------- видимост на повърхнините ----------
-
     private void SurfaceVisible_Click(object sender, RoutedEventArgs e)
     {
         if (sender is not CheckBox { DataContext: Surface s }) return;
+
         // привързването вече е сменило свойството – за „Отмени“ записваме състоянието отпреди щракването
         bool now = s.IsVisible;
         s.IsVisible = !now;
@@ -921,7 +977,8 @@ public partial class MainWindow : Window
         DesignLinkBox.Visibility = _active?.IsDesign == true ? Visibility.Visible : Visibility.Collapsed;
         DesignLinkBox.IsChecked = _active?.GradingSource != null;
         DesignLinkBox.ToolTip = _active?.GradingSource is { } gs
-            ? string.Create(CultureInfo.InvariantCulture,
+            ? string.Create(
+                CultureInfo.InvariantCulture,
                 $"Терен: „{gs.ExistingSurfaceName}“, стъпка {gs.GridStep:0.##} m, {(gs.ZoneOnly ? "само зоната на планирането" : "пълно копие на терена")}")
             : "Свържете повърхнината с терена и платформите, за да се обновява автоматично";
         IsDesignBox.IsChecked = _active?.IsDesign == true;
@@ -931,7 +988,8 @@ public partial class MainWindow : Window
         string failed = _active.FailedBreaklineSegments > 0 ? $"  (⚠ невмъкнати отсечки: {_active.FailedBreaklineSegments})" : "";
         StatsText.Text = s.PointCount == 0 && s.BreaklineCount == 0
             ? "Празна повърхнина – добавете точки."
-            : string.Create(ci,
+            : string.Create(
+                ci,
                 $"Точки:        {s.PointCount}\n" +
                 $"Стр. линии:   {s.BreaklineCount}{failed}\n" +
                 $"Граници:      {s.BoundaryCount}\n" +
@@ -950,7 +1008,6 @@ public partial class MainWindow : Window
     }
 
     // ---------- завъртане на ребра ----------
-
     private void OnSwapEdge(int a, int b)
     {
         if (_active == null) return;
@@ -959,6 +1016,7 @@ public partial class MainWindow : Window
             Info(reason ?? "Реброто не може да се завърти.");
             return;
         }
+
         PushUndo();
         _active.SwapEdge(a, b, out _);
         DataChanged();
@@ -1056,7 +1114,6 @@ public partial class MainWindow : Window
     }
 
     // ---------- стъпка на хоризонталите ----------
-
     private const int MaxContourLevels = 500;
 
     /// <summary>Повърхнината, чиито настройки са показани в полетата за стъпка.</summary>
@@ -1082,7 +1139,8 @@ public partial class MainWindow : Window
         if (used > s.ContourInterval)
         {
             var st = s.GetStatistics();
-            ContourHint.Text = string.Create(CultureInfo.InvariantCulture,
+            ContourHint.Text = string.Create(
+                CultureInfo.InvariantCulture,
                 $"Стъпка {s.ContourInterval:0.###} m дава над {MaxContourLevels} хоризонтали при денивелация {st.MaxZ - st.MinZ:0.#} m – използва се {used:0.###} m.");
             ContourHint.Visibility = Visibility.Visible;
         }
@@ -1100,6 +1158,7 @@ public partial class MainWindow : Window
             ContourIntervalBox.Text = _active.ContourInterval.ToString("0.###", CultureInfo.InvariantCulture);
             MajorEveryBox.Text = _active.MajorContourEvery.ToString(CultureInfo.InvariantCulture);
         }
+
         ContourStepLabel.Text = _active != null ? $"Хоризонтали на „{_active.Name}“ – стъпка, m:" : "Стъпка на хоризонталите, m:";
         _updatingUi = was;
     }
@@ -1107,12 +1166,15 @@ public partial class MainWindow : Window
     private void ContourSetting_Changed(object sender, RoutedEventArgs e)
     {
         if (!IsLoaded || _updatingUi) return;
+
         // при избор от списъка текстът се обновява след събитието
-        Dispatcher.BeginInvoke(() =>
-        {
-            ApplyContourSettings();
-            View.RebuildScene();
-        }, System.Windows.Threading.DispatcherPriority.Background);
+        Dispatcher.BeginInvoke(
+            () =>
+            {
+                ApplyContourSettings();
+                View.RebuildScene();
+            },
+            System.Windows.Threading.DispatcherPriority.Background);
     }
 
     private void ContourSetting_KeyDown(object sender, KeyEventArgs e)
@@ -1129,12 +1191,12 @@ public partial class MainWindow : Window
             PushUndo(); // записва състоянието отпреди промяната (настройките в проекта още са старите)
             _project.View = settings;
         }
+
         ReadViewOptions();
         View.RebuildScene();
     }
 
     // ---------- настройки на изгледа (в проекта; отменят се с Ctrl+Z) ----------
-
     private ViewSettings ViewSettingsFromUi() => new()
     {
         ShowPoints = ShowPointsBox.IsChecked == true,
@@ -1168,7 +1230,6 @@ public partial class MainWindow : Window
     }
 
     // ---------- редакция ----------
-
     private void RaiseLower_Click(object sender, RoutedEventArgs e)
     {
         if (!RequireActive() || RequireSelection() is not { } poly || !TryRead(DeltaZBox, "Δh", out var dz)) return;
@@ -1203,7 +1264,9 @@ public partial class MainWindow : Window
         var b = _active!.Bounds;
         if (b.Width / step * (b.Height / step) > 2_000_000) { Warn("Твърде малка стъпка за тази площ."); return; }
         PushUndo();
-        var s = SurfaceEditor.ResampleToGrid(_active, step,
+        var s = SurfaceEditor.ResampleToGrid(
+            _active,
+            step,
             _project.UniqueSurfaceName(string.Create(CultureInfo.InvariantCulture, $"{_active.Name} (мрежа {step:0.##} m)")));
         _project.Surfaces.Add(s);
         _active = s;
@@ -1239,7 +1302,6 @@ public partial class MainWindow : Window
     // =====================================================================
 
     // ---------- структурни линии ----------
-
     private Surface EnsureActiveSurface()
     {
         if (_active != null) return _active;
@@ -1252,19 +1314,24 @@ public partial class MainWindow : Window
     private void ReportBreaklineResult()
     {
         if (_active is { FailedBreaklineSegments: > 0 } s)
+        {
             Warn($"{s.FailedBreaklineSegments} отсечки от структурните линии не можаха да се вмъкнат в триангулацията " +
                  "(напр. линия извън обхвата на повърхнината или изродена геометрия).");
+        }
     }
 
     private void CreateBreakline(List<Point2> vertices)
     {
         var surface = _active;
         bool closed = vertices.Count > 3 && Point2.Distance(vertices[0], vertices[^1]) < 1e-9;
-        var ask = MessageBox.Show(this,
+        var ask = MessageBox.Show(
+            this,
             "Котите на върховете да се вземат ли от повърхнината?\n\n" +
             "Да – от повърхнината (за върхове извън нея ще бъдете запитани)\n" +
             "Не – въвеждане на кота за всеки връх",
-            "Структурна линия", MessageBoxButton.YesNoCancel, MessageBoxImage.Question);
+            "Структурна линия",
+            MessageBoxButton.YesNoCancel,
+            MessageBoxImage.Question);
         if (ask == MessageBoxResult.Cancel) return;
 
         var pts = new List<Point3>();
@@ -1276,11 +1343,14 @@ public partial class MainWindow : Window
             double? z = surface?.ElevationAt(v.X, v.Y);
             if (ask == MessageBoxResult.No || z == null)
             {
-                z = InputDialog.AskNumber(this, "Структурна линия",
+                z = InputDialog.AskNumber(
+                    this,
+                    "Структурна линия",
                     string.Create(CultureInfo.InvariantCulture, $"Кота на връх {i + 1} от {vertices.Count} (X = {v.X:F3}, Y = {v.Y:F3}):"),
                     Math.Round(z ?? last, 3));
                 if (z == null) return;
             }
+
             last = z.Value;
             pts.Add(new Point3(v.X, v.Y, z.Value));
         }
@@ -1325,10 +1395,13 @@ public partial class MainWindow : Window
             Filter = "Текстови файлове (*.txt;*.csv;*.xyz;*.dat)|*.txt;*.csv;*.xyz;*.dat|Всички файлове (*.*)|*.*",
         };
         if (dlg.ShowDialog(this) != true) return;
-        var geo = MessageBox.Show(this,
+        var geo = MessageBox.Show(
+            this,
             "Файлът в геодезическа координатна система ли е (X – север, Y – изток)?\n\n" +
             "Всяка линия е поредица от редове с координати; линиите се разделят с празен ред или ред без координати (напр. END).",
-            "Импорт на структурни линии", MessageBoxButton.YesNoCancel, MessageBoxImage.Question);
+            "Импорт на структурни линии",
+            MessageBoxButton.YesNoCancel,
+            MessageBoxImage.Question);
         if (geo == MessageBoxResult.Cancel) return;
 
         var lines = PointFileReader.ReadPolylines(dlg.FileName, geo == MessageBoxResult.Yes);
@@ -1349,8 +1422,11 @@ public partial class MainWindow : Window
         if (_active == null || SelectedBreakline is not { } b) { Warn("Изберете структурна линия от списъка."); return; }
         var ci = CultureInfo.InvariantCulture;
         var text = string.Join(Environment.NewLine, b.Vertices.Select(v => string.Create(ci, $"{v.X:F3} {v.Y:F3} {v.Z:F3}")));
-        var result = InputDialog.AskMultiline(this, $"Върхове на „{b.Name}“",
-            "Един връх на ред: X Y Z (затворена линия – последният връх = първия):", text);
+        var result = InputDialog.AskMultiline(
+            this,
+            $"Върхове на „{b.Name}“",
+            "Един връх на ред: X Y Z (затворена линия – последният връх = първия):",
+            text);
         if (result == null) return;
 
         var pts = PointFileReader.Parse(result.Split('\n'));
@@ -1375,8 +1451,12 @@ public partial class MainWindow : Window
     private void DeleteAllBreaklines_Click(object sender, RoutedEventArgs e)
     {
         if (_active == null || _active.Breaklines.Count == 0) return;
-        if (MessageBox.Show(this, $"Да се изтрият ли всички {_active.Breaklines.Count} структурни линии на „{_active.Name}“?",
-                "Изтриване", MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes) return;
+        if (MessageBox.Show(
+            this,
+            $"Да се изтрият ли всички {_active.Breaklines.Count} структурни линии на „{_active.Name}“?",
+            "Изтриване",
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Question) != MessageBoxResult.Yes) return;
         PushUndo();
         _active.SetBreaklines(Array.Empty<Breakline>());
         View.SelectedBreakline = null;
@@ -1384,7 +1464,6 @@ public partial class MainWindow : Window
     }
 
     // ---------- граници ----------
-
     private static readonly string[] BoundaryTypeOptions =
     {
         "Външна – остава само повърхнината вътре",
@@ -1408,7 +1487,8 @@ public partial class MainWindow : Window
         _active.AddBoundary(b);
         View.SelectedBoundary = b;
         DataChanged();
-        Info(string.Create(CultureInfo.InvariantCulture,
+        Info(string.Create(
+            CultureInfo.InvariantCulture,
             $"Добавена граница „{b.Name}“ ({typeName}, {b.Polygon.Area:F1} m²). Площ на повърхнината: {_active.GetStatistics().Area2D:F1} m²."));
     }
 
@@ -1445,10 +1525,13 @@ public partial class MainWindow : Window
         if (pts.Count < 3) { Warn("Нужни са поне 3 точки."); return; }
 
         double suggested = Math.Round(DataHull.SuggestMaxEdge(pts), 1);
-        var max = InputDialog.AskNumber(this, "Граница по контура на данните",
+        var max = InputDialog.AskNumber(
+            this,
+            "Граница по контура на данните",
             "Максимална дължина на външно ребро, m.\n" +
             "Външните триъгълници с по-дълги ребра се отрязват (по-малка стойност – по-плътно прилягане).\n" +
-            "0 – изпъкнала обвивка. Предложението е 3 × медианата на ребрата:", suggested);
+            "0 – изпъкнала обвивка. Предложението е 3 × медианата на ребрата:",
+            suggested);
         if (max == null) return;
 
         var ring = DataHull.Compute(pts, max.Value);
@@ -1458,12 +1541,12 @@ public partial class MainWindow : Window
         _active.AddBoundary(b);
         View.SelectedBoundary = b;
         DataChanged();
-        Info(string.Create(CultureInfo.InvariantCulture,
+        Info(string.Create(
+            CultureInfo.InvariantCulture,
             $"Добавена външна граница по контура на данните: {ring.Count} върха, {b.Polygon.Area:F1} m²."));
     }
 
     // ---------- профил и разрези ----------
-
     private void OpenProfile(List<Point2> line)
     {
         if (_project.Surfaces.All(s => s.TriangleCount == 0)) { Warn("Няма повърхнини с триангулация."); return; }
@@ -1472,8 +1555,7 @@ public partial class MainWindow : Window
         View.InvalidateVisual();
 
         var existing = _project.ExistingSurface?.Name;
-        var design = _active != null && _active.Name != existing ? _active.Name
-            : _project.Surfaces.FirstOrDefault(s => s.Name != existing && s.TriangleCount > 0)?.Name;
+        var design = _active != null && _active.Name != existing ? _active.Name : _project.Surfaces.FirstOrDefault(s => s.Name != existing && s.TriangleCount > 0)?.Name;
         var w = new ProfileWindow(() => _project, line, existing, design) { Owner = this };
         w.MarkerChanged += p => { View.Marker = p; View.InvalidateVisual(); };
         w.SectionsChanged += (lines, i) => { View.SectionLines = lines; View.CurrentSection = i; View.InvalidateVisual(); };
@@ -1487,23 +1569,35 @@ public partial class MainWindow : Window
     }
 
     // ---------- DXF ----------
-
     private void ExportContoursDxf_Click(object sender, RoutedEventArgs e)
     {
         if (!RequireActive() || _active!.TriangleCount == 0) return;
         double interval = _active.EffectiveContourInterval(MaxContourLevels);
         int every = _active.MajorContourEvery;
-        var h = InputDialog.AskNumber(this, "Хоризонтали в DXF",
-            string.Create(CultureInfo.InvariantCulture,
+        var h = InputDialog.AskNumber(
+            this,
+            "Хоризонтали в DXF",
+            string.Create(
+                CultureInfo.InvariantCulture,
                 $"Хоризонтали през {interval:0.###} m (всяка {every}-а е главна) – от „Изглед“.\nВисочина на надписите на котите, m (0 – без надписи):"),
             Math.Max(Math.Round(interval * 2, 1), 0.5));
         if (h == null) return;
-        var tri = MessageBox.Show(this, "Да се включат ли и триъгълниците (ребрата на TIN като 3D линии на отделен слой)?",
-            "Хоризонтали в DXF", MessageBoxButton.YesNoCancel, MessageBoxImage.Question);
+        var tri = MessageBox.Show(
+            this,
+            "Да се включат ли и триъгълниците (ребрата на TIN като 3D линии на отделен слой)?",
+            "Хоризонтали в DXF",
+            MessageBoxButton.YesNoCancel,
+            MessageBoxImage.Question);
         if (tri == MessageBoxResult.Cancel) return;
         var dlg = new SaveFileDialog { Filter = "DXF (*.dxf)|*.dxf", FileName = $"{_active.Name} - horizontali.dxf" };
         if (dlg.ShowDialog(this) != true) return;
-        int n = DxfWriter.WriteContours(dlg.FileName, _active, interval, every, h.Value, Math.Max(50, h.Value * 60),
+        int n = DxfWriter.WriteContours(
+            dlg.FileName,
+            _active,
+            interval,
+            every,
+            h.Value,
+            Math.Max(50, h.Value * 60),
             includeTriangles: tri == MessageBoxResult.Yes);
         Info($"Записани {n} хоризонтали{(tri == MessageBoxResult.Yes ? " и триъгълниците" : "")}" +
              $"{(_active.IsDesign ? " (проектни слоеве PROEKTNI_*, червено)" : "")} в {dlg.FileName}");
@@ -1588,7 +1682,8 @@ public partial class MainWindow : Window
             var r = p.GetReferencePoint();
             double zmin = poly.Vertices.Min(v => p.PlaneElevation(v.X, v.Y));
             double zmax = poly.Vertices.Max(v => p.PlaneElevation(v.X, v.Y));
-            PlInfoText.Text = string.Create(ci,
+            PlInfoText.Text = string.Create(
+                ci,
                 $"Площ: {poly.Area:F2} m², периметър: {poly.Perimeter:F2} m\n" +
                 $"Кота в т. ({r.X:F2}; {r.Y:F2}); по контура: {zmin:F3} … {zmax:F3}");
         }
@@ -1710,6 +1805,7 @@ public partial class MainWindow : Window
                 src.GeneratedVersion = s.Version;
                 src.LastInputKey = src.InputKey(eg, platforms);
             }
+
             RefreshAll();
             Info($"Създадена „{name}“: {s.Points.Count} точки, {s.TriangleCount} триъгълника. " +
                  "Обновява се автоматично при промяна на платформите или терена.");
@@ -1724,6 +1820,7 @@ public partial class MainWindow : Window
             Warn("Изберете различни „Съществуващ терен“ (тук) и активна повърхнина (раздел „Повърхнини“).");
             return;
         }
+
         if (!TryRead(CellBox, "Клетка", out var cell, 0.05, 1000) || !TryRead(SwellBox, "Коеф. на разрохкване", out var k, 0.5, 2)) return;
         var design = _active;
         await RunBusy("Изчисляване на обемите между повърхнините...", async () =>
@@ -1759,6 +1856,7 @@ public partial class MainWindow : Window
                 ? string.Create(ci, $"Недостиг (доставка): {v.Net:F2} m³")
                 : string.Create(ci, $"Излишък (извозване): {-v.Net:F2} m³"));
         }
+
         sb.AppendLine(string.Create(ci, $"Площ с данни: {v.Area:F1} m²"));
         sb.Append(string.Create(ci, $"Картограма: {v.Grid.Nx} × {v.Grid.Ny} клетки по {cell:0.##} m"));
         return sb.ToString();

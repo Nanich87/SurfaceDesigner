@@ -13,7 +13,7 @@ public class EdgeSwapTests
         new Point3(0, 0, 0), new Point3(10, 0, 0), new Point3(10, 6, 10), new Point3(0, 6, 0),
     });
 
-    private static HashSet<(int, int)> Edges(Surface s) => s.GetEdges().Select(e => (e.A, e.B)).ToHashSet();
+    private static HashSet<(int A, int B)> Edges(Surface s) => s.GetEdges().Select(e => (e.A, e.B)).ToHashSet();
 
     [Fact]
     public void Swap_ChangesDiagonalAndInterpolation()
@@ -93,6 +93,7 @@ public class EdgeSwapTests
                 return;
             }
         }
+
         Assert.Fail("Очакваното ребро липсва");
     }
 
@@ -138,6 +139,7 @@ public class EdgeSwapTests
             double x = 50 + rnd.NextDouble() * 80, y = 50 + rnd.NextDouble() * 80;
             if (s.TryFindEdge(x, y, 100, out a, out b) && s.SwapEdge(a, b, out _)) swapped++;
         }
+
         Assert.Equal(10, swapped);
         Assert.Equal(0, s.FailedEdgeSwaps);
         Assert.Equal(area, s.GetStatistics().Area2D, 1e-6 * area);
@@ -155,6 +157,7 @@ public class EdgeSwapTests
             double x = rnd.NextDouble() * 200, y = rnd.NextDouble() * 200;
             if (s.TryFindEdge(x, y, 100, out int a, out int b) && s.SwapEdge(a, b, out _)) swapped++;
         }
+
         Assert.True(swapped > 300);
         Assert.Equal(0, s.FailedEdgeSwaps);
 

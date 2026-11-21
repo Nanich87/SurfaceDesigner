@@ -46,9 +46,11 @@ public static class PointFileReader
                 current.Add(p);
                 continue;
             }
+
             if (current.Count >= 2) result.Add(current);
             current = new List<Point3>();
         }
+
         if (current.Count >= 2) result.Add(current);
         return result;
     }
@@ -79,9 +81,11 @@ public static class PointFileReader
         {
             // Номер X Y Z [код] – номерът може да е и текст
             if (P(t[1], out a) && P(t[2], out b) && P(t[3], out z)) return true;
+
             // X Y Z код
             return P(t[0], out a) && P(t[1], out b) && P(t[2], out z);
         }
+
         return false;
     }
 

@@ -61,6 +61,7 @@ internal static class ColorRamp
                     (byte)(c0.B + (c1.B - c0.B) * u));
             }
         }
+
         return stops[^1].C;
     }
 }
