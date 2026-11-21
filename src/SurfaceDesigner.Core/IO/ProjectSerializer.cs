@@ -10,7 +10,54 @@ public static class ProjectSerializer
 {
     private static readonly JsonSerializerOptions Options = new() { WriteIndented = false };
 
-    public static void Save(Project project, string path) => File.WriteAllText(path, ToJson(project));
+    /// <summary>
+    /// Записва проекта атомарно: съдържанието отива във временен файл в същата папка, който след това
+    /// замества стария. Предишната версия се пази като <c>&lt;файл&gt;.bak</c>.
+    /// Прекъсване по време на запис никога не оставя наполовина записан проект.
+    /// </summary>
+    public static void Save(Project project, string path) => WriteAtomic(path, ToJson(project));
+
+    /// <summary>Път на резервното копие с предишната версия на файла.</summary>
+    public static string BackupPath(string path) => path + ".bak";
+
+    internal static void WriteAtomic(string path, string contents)
+    {
+        path = Path.GetFullPath(path);
+        string dir = Path.GetDirectoryName(path)!;
+        string tmp = Path.Combine(dir, $".{Path.GetFileName(path)}.{Guid.NewGuid():N}.tmp");
+        try
+        {
+            using (var fs = new FileStream(tmp, FileMode.CreateNew, FileAccess.Write, FileShare.None))
+            using (var writer = new StreamWriter(fs, new System.Text.UTF8Encoding(false)))
+            {
+                writer.Write(contents);
+                writer.Flush();
+                fs.Flush(flushToDisk: true); // данните са на диска преди подмяната
+            }
+
+            if (File.Exists(path))
+            {
+                try
+                {
+                    File.Replace(tmp, path, BackupPath(path), ignoreMetadataErrors: true);
+                }
+                catch (Exception ex) when (ex is IOException or PlatformNotSupportedException or UnauthorizedAccessException)
+                {
+                    // Някои файлови системи (напр. мрежови дялове) не поддържат File.Replace
+                    File.Copy(path, BackupPath(path), overwrite: true);
+                    File.Move(tmp, path, overwrite: true);
+                }
+            }
+            else
+            {
+                File.Move(tmp, path);
+            }
+        }
+        finally
+        {
+            if (File.Exists(tmp)) File.Delete(tmp);
+        }
+    }
 
     public static Project Load(string path) => FromJson(File.ReadAllText(path));
 
