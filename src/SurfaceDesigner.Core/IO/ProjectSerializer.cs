@@ -15,12 +15,16 @@ public static class ProjectSerializer
     /// замества стария. Предишната версия се пази като <c>&lt;файл&gt;.bak</c>.
     /// Прекъсване по време на запис никога не оставя наполовина записан проект.
     /// </summary>
-    public static void Save(Project project, string path) => WriteAtomic(path, ToJson(project));
+    public static void Save(Project project, string path) => WriteAtomic(path, ToJson(project), BackupPath(path));
 
     /// <summary>Път на резервното копие с предишната версия на файла.</summary>
     public static string BackupPath(string path) => path + ".bak";
 
-    internal static void WriteAtomic(string path, string contents)
+    /// <summary>
+    /// Записва <paramref name="contents"/> атомарно. Ако <paramref name="backupPath"/> не е null,
+    /// предишното съдържание на файла се пази там.
+    /// </summary>
+    internal static void WriteAtomic(string path, string contents, string? backupPath)
     {
         path = Path.GetFullPath(path);
         string dir = Path.GetDirectoryName(path)!;
@@ -39,12 +43,12 @@ public static class ProjectSerializer
             {
                 try
                 {
-                    File.Replace(tmp, path, BackupPath(path), ignoreMetadataErrors: true);
+                    File.Replace(tmp, path, backupPath, ignoreMetadataErrors: true);
                 }
                 catch (Exception ex) when (ex is IOException or PlatformNotSupportedException or UnauthorizedAccessException)
                 {
                     // Някои файлови системи (напр. мрежови дялове) не поддържат File.Replace
-                    File.Copy(path, BackupPath(path), overwrite: true);
+                    if (backupPath != null) File.Copy(path, backupPath, overwrite: true);
                     File.Move(tmp, path, overwrite: true);
                 }
             }

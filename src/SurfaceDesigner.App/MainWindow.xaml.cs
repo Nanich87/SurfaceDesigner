@@ -30,9 +30,27 @@ public partial class MainWindow : Window
     private bool _dirty;
     private readonly List<(string Json, string? Active, int Platform)> _undo = new();
 
+    // Автоматичен запис: копие на незаписаните промени на всеки AutosaveInterval
+    private static readonly TimeSpan AutosaveInterval = TimeSpan.FromMinutes(2);
+    private readonly AutosaveStore? _autosave;
+    private readonly System.Windows.Threading.DispatcherTimer _autosaveTimer = new() { Interval = AutosaveInterval };
+    private int _changeVersion;     // увеличава се при всяка промяна на проекта
+    private int _autosavedVersion;  // версията в последното копие (или в записания файл)
+    private bool _autosaving;
+
     public MainWindow()
     {
         InitializeComponent();
+        try
+        {
+            _autosave = new AutosaveStore(AutosaveStore.DefaultDirectory);
+            _autosaveTimer.Tick += async (_, _) => await AutosaveAsync();
+            _autosaveTimer.Start();
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            _autosave = null; // без автоматичен запис, но програмата работи
+        }
         _designTimer.Tick += async (_, _) =>
         {
             _designTimer.Stop();
@@ -54,12 +72,20 @@ public partial class MainWindow : Window
         {
             if (e.Key == Key.Home && Keyboard.FocusedElement is not TextBox) { View.ZoomExtents(); e.Handled = true; }
         };
-        Closing += (_, e) => e.Cancel = !ConfirmDiscard();
+        Closing += (_, e) =>
+        {
+            e.Cancel = !ConfirmDiscard();
+            if (!e.Cancel) ClearAutosave(); // записано или съзнателно отхвърлено – копието не трябва
+        };
+        Closed += (_, _) => _autosave?.Dispose();
         Loaded += (_, _) =>
         {
+            if (OfferAutosaveRecovery()) return;
             var args = Environment.GetCommandLineArgs();
             if (args.Length > 1 && File.Exists(args[1]))
-                LoadProject(ProjectSerializer.Load(args[1]), Path.GetFullPath(args[1]));
+            {
+                if (!OpenProjectFile(Path.GetFullPath(args[1]))) RefreshAll(zoom: true);
+            }
             else
                 RefreshAll(zoom: true);
         };
@@ -130,7 +156,14 @@ public partial class MainWindow : Window
     {
         _undo.Add((ProjectSerializer.ToJson(_project), _active?.Name, SelectedPlatform != null ? _project.Platforms.IndexOf(SelectedPlatform) : -1));
         if (_undo.Count > MaxUndo) _undo.RemoveAt(0);
+        MarkDirty();
+    }
+
+    /// <summary>Маркира проекта като променен (заглавието със „*“ и следващия автоматичен запис).</summary>
+    private void MarkDirty()
+    {
         _dirty = true;
+        _changeVersion++;
     }
 
     /// <summary>Данните са променени – обновяване на изгледа и анулиране на остарели резултати.</summary>
@@ -227,7 +260,7 @@ public partial class MainWindow : Window
             src.LastInputKey = key;
             _gradingModelValid = false;
             _lastVolumes = null;
-            _dirty = true;
+            MarkDirty();
             RefreshAll();
             Info($"„{d.Name}“ е обновена автоматично ({d.TriangleCount} триъгълника, {sw.ElapsedMilliseconds} ms).");
         }
@@ -368,6 +401,7 @@ public partial class MainWindow : Window
         _gradingModelValid = false;
         _undo.Clear();
         _dirty = false;
+        ClearAutosave();
         View.SelectedPlatform = project.Platforms.FirstOrDefault();
         ResultsText.Text = "";
         SyncDesignLinks();
@@ -386,8 +420,138 @@ public partial class MainWindow : Window
         if (!ConfirmDiscard()) return;
         var dlg = new OpenFileDialog { Filter = ProjectFilter };
         if (dlg.ShowDialog(this) != true) return;
-        LoadProject(ProjectSerializer.Load(dlg.FileName), dlg.FileName);
-        Info($"Отворен: {dlg.FileName}");
+        OpenProjectFile(dlg.FileName);
+    }
+
+    /// <summary>
+    /// Отваря проект. Ако файлът е повреден и до него има резервно копие (.bak), предлага да се отвори то –
+    /// проектът остава със същия път, т.е. „Запиши“ заменя повредения файл.
+    /// </summary>
+    private bool OpenProjectFile(string path)
+    {
+        Project project;
+        try
+        {
+            project = ProjectSerializer.Load(path);
+        }
+        catch (Exception ex)
+        {
+            string bak = ProjectSerializer.BackupPath(path);
+            if (!File.Exists(bak))
+            {
+                MessageBox.Show(this, $"Проектът не може да се отвори:\n{path}\n\n{ex.Message}", "Грешка",
+                    MessageBoxButton.OK, MessageBoxImage.Error);
+                return false;
+            }
+
+            var answer = MessageBox.Show(this,
+                $"Проектът не може да се отвори:\n{path}\n\n{ex.Message}\n\n" +
+                $"Има резервно копие с предишната записана версия от {File.GetLastWriteTime(bak):dd.MM.yyyy HH:mm}. " +
+                "Да се отвори ли то?\n\nПри „Запиши“ то ще замени повредения файл.",
+                "Повреден проект", MessageBoxButton.YesNo, MessageBoxImage.Warning);
+            if (answer != MessageBoxResult.Yes) return false;
+
+            try
+            {
+                project = ProjectSerializer.Load(bak);
+            }
+            catch (Exception bakEx)
+            {
+                MessageBox.Show(this, $"И резервното копие не може да се отвори:\n{bak}\n\n{bakEx.Message}", "Грешка",
+                    MessageBoxButton.OK, MessageBoxImage.Error);
+                return false;
+            }
+
+            LoadProject(project, path);
+            MarkDirty();
+            UpdateTitle();
+            Info($"Отворено резервно копие: {bak}. Запишете проекта, за да замени повредения файл.");
+            return true;
+        }
+
+        LoadProject(project, path);
+        Info($"Отворен: {path}");
+        return true;
+    }
+
+    // ---------------------------------------------------------------------
+    //  Автоматичен запис
+    // ---------------------------------------------------------------------
+
+    private async Task AutosaveAsync()
+    {
+        if (_autosave == null || _autosaving || !_dirty || _changeVersion == _autosavedVersion) return;
+        _autosaving = true;
+        try
+        {
+            int version = _changeVersion;
+            int generation = _autosave.Generation;
+            string json = ProjectSerializer.ToJson(_project); // в UI нишката – консистентно състояние
+            string? path = _projectPath;
+            if (await Task.Run(() => _autosave.Save(json, path, generation)))
+                _autosavedVersion = version;
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            Info($"Автоматичният запис не успя: {ex.Message}");
+        }
+        finally { _autosaving = false; }
+    }
+
+    private void ClearAutosave()
+    {
+        _autosavedVersion = _changeVersion;
+        try { _autosave?.Clear(); }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { }
+    }
+
+    /// <summary>
+    /// При стартиране предлага автоматично копие, останало от незатворена нормално сесия (напр. срив).
+    /// Връща true, ако е възстановен проект.
+    /// </summary>
+    private bool OfferAutosaveRecovery()
+    {
+        if (_autosave == null) return false;
+        IReadOnlyList<AutosaveEntry> entries;
+        try { entries = _autosave.FindRecoverable(); }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { return false; }
+
+        foreach (var entry in entries)
+        {
+            string name = entry.OriginalPath != null ? Path.GetFileName(entry.OriginalPath) : "Нов (незаписан) проект";
+            var answer = MessageBox.Show(this,
+                "Програмата не е била затворена нормално. Намерено е автоматично копие с незаписани промени:\n\n" +
+                $"{name}\nот {entry.SavedAtUtc.ToLocalTime():dd.MM.yyyy HH:mm}\n\n" +
+                "Да – възстанови го\nНе – изтрий копието\nОтказ – остави го за следващото стартиране",
+                "Възстановяване", MessageBoxButton.YesNoCancel, MessageBoxImage.Question);
+
+            if (answer == MessageBoxResult.No) { _autosave.Discard(entry); continue; }
+            if (answer != MessageBoxResult.Yes) continue;
+
+            Project project;
+            try { project = ProjectSerializer.Load(entry.ProjectFile); }
+            catch (Exception ex)
+            {
+                MessageBox.Show(this, $"Копието не може да се отвори:\n{ex.Message}", "Грешка",
+                    MessageBoxButton.OK, MessageBoxImage.Error);
+                continue;
+            }
+
+            LoadProject(project, entry.OriginalPath);
+            MarkDirty();
+            UpdateTitle();
+            // Първо собствено копие, после изтриване на старото – промените не остават без копие нито за миг
+            try
+            {
+                if (_autosave.Save(ProjectSerializer.ToJson(_project), _projectPath, _autosave.Generation))
+                    _autosavedVersion = _changeVersion;
+                _autosave.Discard(entry);
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { }
+            Info($"Възстановено автоматично копие от {entry.SavedAtUtc.ToLocalTime():dd.MM.yyyy HH:mm}. Запишете проекта.");
+            return true;
+        }
+        return false;
     }
 
     private void Save_Executed(object sender, ExecutedRoutedEventArgs e) => SaveProject(_projectPath);
@@ -405,6 +569,7 @@ public partial class MainWindow : Window
         ProjectSerializer.Save(_project, path);
         _projectPath = path;
         _dirty = false;
+        ClearAutosave();
         UpdateTitle();
         Info($"Записан: {path}");
         return true;
@@ -418,7 +583,7 @@ public partial class MainWindow : Window
         _project = ProjectSerializer.FromJson(json);
         _active = active != null ? _project.FindSurface(active) : null;
         View.SelectedPlatform = platform >= 0 && platform < _project.Platforms.Count ? _project.Platforms[platform] : null;
-        _dirty = true;
+        MarkDirty();
         _designJob++; // текущо изчисление (ако има) е за отменено състояние
         SyncDesignLinks();
         _contourBoxesSurface = null;
