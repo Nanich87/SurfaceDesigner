@@ -1,0 +1,378 @@
+<Window x:Class="SurfaceDesigner.App.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:local="clr-namespace:SurfaceDesigner.App"
+        Title="Surface Designer – повърхнини и вертикално планиране"
+        Height="800" Width="1300" WindowStartupLocation="CenterScreen" WindowState="Maximized">
+
+    <Window.Resources>
+        <Style TargetType="GroupBox">
+            <Setter Property="Margin" Value="0,4,0,4" />
+            <Setter Property="Padding" Value="4" />
+        </Style>
+        <Style TargetType="Button">
+            <Setter Property="Margin" Value="2" />
+            <Setter Property="Padding" Value="6,2" />
+        </Style>
+        <Style TargetType="TextBox">
+            <Setter Property="Margin" Value="2" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+        </Style>
+        <Style TargetType="CheckBox">
+            <Setter Property="Margin" Value="2,3" />
+        </Style>
+        <Style x:Key="Lbl" TargetType="TextBlock">
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="Margin" Value="2,0,6,0" />
+        </Style>
+        <Style x:Key="ToolButton" TargetType="RadioButton" BasedOn="{StaticResource {x:Static ToolBar.RadioButtonStyleKey}}">
+            <Setter Property="Padding" Value="6,3" />
+            <Setter Property="GroupName" Value="Tools" />
+        </Style>
+    </Window.Resources>
+
+    <Window.CommandBindings>
+        <CommandBinding Command="New" Executed="New_Executed" />
+        <CommandBinding Command="Open" Executed="Open_Executed" />
+        <CommandBinding Command="Save" Executed="Save_Executed" />
+        <CommandBinding Command="SaveAs" Executed="SaveAs_Executed" />
+        <CommandBinding Command="Undo" Executed="Undo_Executed" />
+    </Window.CommandBindings>
+
+    <DockPanel>
+        <Menu DockPanel.Dock="Top">
+            <MenuItem Header="_Файл">
+                <MenuItem Header="_Нов проект" Command="New" />
+                <MenuItem Header="_Отвори..." Command="Open" />
+                <MenuItem Header="_Запиши" Command="Save" />
+                <MenuItem Header="Запиши _като..." Command="SaveAs" />
+                <Separator />
+                <MenuItem Header="_Импорт на точки (TXT/CSV)..." Click="ImportPoints_Click" />
+                <MenuItem Header="Импорт на повърхнини от La_ndXML..." Click="ImportLandXml_Click" />
+                <MenuItem Header="_Експорт на точки..." Click="ExportPoints_Click" />
+                <MenuItem Header="Експорт в _LandXML..." Click="ExportLandXml_Click" />
+                <MenuItem Header="Експорт на _хоризонтали в DXF..." Click="ExportContoursDxf_Click" />
+                <MenuItem Header="Експорт на TIN в _DXF (3DFACE)..." Click="ExportTinDxf_Click" />
+                <MenuItem Header="Експорт на _картограмата (CSV)..." Click="ExportCutFill_Click" />
+                <Separator />
+                <MenuItem Header="Примерен _терен" Click="SampleTerrain_Click" />
+                <Separator />
+                <MenuItem Header="_Изход" Click="Exit_Click" />
+            </MenuItem>
+            <MenuItem Header="_Редакция">
+                <MenuItem Header="_Отмени" Command="Undo" />
+            </MenuItem>
+            <MenuItem Header="_Изглед">
+                <MenuItem Header="_Покажи всичко" Click="ZoomExtents_Click" InputGestureText="Home" />
+            </MenuItem>
+        </Menu>
+
+        <ToolBarTray DockPanel.Dock="Top">
+            <ToolBar x:Name="Tools">
+                <RadioButton Style="{StaticResource ToolButton}" Tag="Pan" IsChecked="True" Checked="Tool_Checked" Content="✋ Преглед" ToolTip="Преместване на изгледа (също среден бутон); колелце – мащаб" />
+                <Separator />
+                <RadioButton Style="{StaticResource ToolButton}" Tag="AddPoint" Checked="Tool_Checked" Content="＋ Точка" ToolTip="Добавяне на точка към активната повърхнина" />
+                <RadioButton Style="{StaticResource ToolButton}" Tag="MovePoint" Checked="Tool_Checked" Content="↔ Премести" ToolTip="Влачене на точка" />
+                <RadioButton Style="{StaticResource ToolButton}" Tag="DeletePoint" Checked="Tool_Checked" Content="✕ Изтрий" ToolTip="Изтриване на точка" />
+                <RadioButton Style="{StaticResource ToolButton}" Tag="SwapEdge" Checked="Tool_Checked" Content="⤡ Завърти ребро" ToolTip="Завъртане на триъгълници: размяна на диагонала на двата триъгълника около реброто" />
+                <RadioButton Style="{StaticResource ToolButton}" Tag="DrawBreakline" Checked="Tool_Checked" Content="╱ Структурна линия" ToolTip="Чертане на структурна линия (ръб) – отсечките ѝ стават задължителни ребра на TIN" />
+                <RadioButton Style="{StaticResource ToolButton}" Tag="DrawBoundary" Checked="Tool_Checked" Content="⬠ Граница" ToolTip="Очертаване на граница на повърхнината (външна, скриваща или показваща)" />
+                <Separator />
+                <RadioButton Style="{StaticResource ToolButton}" Tag="DrawProfile" Checked="Tool_Checked" Content="📈 Профил" ToolTip="Начертайте трасе – надлъжен профил и напречни разрези" />
+                <Separator />
+                <RadioButton Style="{StaticResource ToolButton}" Tag="DrawSelection" Checked="Tool_Checked" Content="⬚ Полигон за редакция" ToolTip="Очертаване на област за редакция" />
+                <Separator />
+                <RadioButton Style="{StaticResource ToolButton}" Tag="DrawPlatform" Checked="Tool_Checked" Content="▱ Нова платформа" ToolTip="Очертаване на проектна площадка" />
+                <RadioButton Style="{StaticResource ToolButton}" Tag="EditPlatform" Checked="Tool_Checked" Content="✎ Редакция на платформа" ToolTip="Влачене на върхове / избор на платформа" />
+                <Separator />
+                <Button Content="⤢ Покажи всичко" Click="ZoomExtents_Click" />
+            </ToolBar>
+        </ToolBarTray>
+
+        <StatusBar DockPanel.Dock="Bottom">
+            <StatusBarItem>
+                <TextBlock x:Name="CursorText" FontFamily="Consolas" MinWidth="420" />
+            </StatusBarItem>
+            <Separator />
+            <StatusBarItem>
+                <TextBlock x:Name="InfoText" />
+            </StatusBarItem>
+        </StatusBar>
+
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="5" />
+                <ColumnDefinition Width="380" MinWidth="300" />
+            </Grid.ColumnDefinitions>
+
+            <Border BorderBrush="#BBB" BorderThickness="1">
+                <local:SurfaceView x:Name="View" />
+            </Border>
+
+            <GridSplitter Grid.Column="1" HorizontalAlignment="Stretch" />
+
+            <TabControl Grid.Column="2" x:Name="RightPanel">
+                <!-- ================= ПОВЪРХНИНИ ================= -->
+                <TabItem Header="Повърхнини">
+                    <ScrollViewer VerticalScrollBarVisibility="Auto">
+                        <StackPanel Margin="4">
+                            <ListBox x:Name="SurfaceList" Height="110" SelectionChanged="SurfaceList_SelectionChanged"
+                                     ToolTip="Отметката показва/скрива повърхнината; избраната е активната">
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <StackPanel Orientation="Horizontal">
+                                            <CheckBox IsChecked="{Binding IsVisible, Mode=TwoWay}" Click="SurfaceVisible_Click"
+                                                      VerticalAlignment="Center" Margin="0,0,6,0" ToolTip="Видима" />
+                                            <TextBlock Text="{Binding Name}" VerticalAlignment="Center" />
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+                            </ListBox>
+                            <WrapPanel>
+                                <Button Content="👁 Покажи всички" Click="ShowAllSurfaces_Click" />
+                                <Button Content="Само активната" Click="ShowOnlyActive_Click" />
+                            </WrapPanel>
+                            <WrapPanel>
+                                <Button Content="Нова" Click="NewSurface_Click" ToolTip="Празна повърхнина" />
+                                <Button Content="Дублирай" Click="DuplicateSurface_Click" />
+                                <Button Content="Преименувай" Click="RenameSurface_Click" />
+                                <Button Content="Изтрий" Click="DeleteSurface_Click" />
+                            </WrapPanel>
+
+                            <GroupBox Header="Информация">
+                                <StackPanel>
+                                    <CheckBox x:Name="IsDesignBox" Content="Проектна повърхнина (червени триъгълници и хоризонтали)"
+                                              Click="IsDesignBox_Click" Margin="2,2,2,2" />
+                                    <CheckBox x:Name="DesignLinkBox" Content="Обновява се автоматично от платформите и терена"
+                                              Click="DesignLinkBox_Click" Margin="22,2,2,6" />
+                                    <TextBlock x:Name="StatsText" FontFamily="Consolas" TextWrapping="Wrap" />
+                                </StackPanel>
+                            </GroupBox>
+
+                            <GroupBox Header="Триангулация">
+                                <StackPanel>
+                                    <DockPanel>
+                                        <TextBlock Style="{StaticResource Lbl}" Text="Макс. дължина на ребро, m (0 = без):" />
+                                        <Button DockPanel.Dock="Right" Content="Приложи" Click="ApplyMaxEdge_Click" />
+                                        <TextBox x:Name="MaxEdgeBox" Text="0" />
+                                    </DockPanel>
+                                    <DockPanel>
+                                        <TextBlock x:Name="SwapsText" Style="{StaticResource Lbl}" Text="Завъртания на ребра: 0" />
+                                    </DockPanel>
+                                    <WrapPanel>
+                                        <Button Content="Завърти ребро" Click="SwapTool_Click" />
+                                        <Button Content="Махни неприложените" Click="RemoveFailedSwaps_Click" ToolTip="Завъртания, чиито ребра вече не съществуват (след промяна на точките)" />
+                                        <Button Content="Махни всички" Click="ClearSwaps_Click" ToolTip="Връща триангулацията на Делоне" />
+                                    </WrapPanel>
+                                </StackPanel>
+                            </GroupBox>
+
+                            <GroupBox Header="Структурни линии">
+                                <StackPanel>
+                                    <ListBox x:Name="BreaklineList" Height="90" SelectionChanged="BreaklineList_SelectionChanged"
+                                             MouseDoubleClick="BreaklineList_DoubleClick" ToolTip="Двойно щракване – преименуване" />
+                                    <WrapPanel>
+                                        <Button Content="Начертай" Click="DrawBreakline_Click" />
+                                        <Button Content="Импорт..." Click="ImportBreaklines_Click" ToolTip="Текстов файл: линиите се разделят с празен ред или ред „END“" />
+                                        <Button Content="Върхове и коти..." Click="EditBreakline_Click" />
+                                        <Button Content="Изтрий" Click="DeleteBreakline_Click" />
+                                        <Button Content="Изтрий всички" Click="DeleteAllBreaklines_Click" />
+                                    </WrapPanel>
+                                </StackPanel>
+                            </GroupBox>
+
+                            <GroupBox Header="Граници">
+                                <StackPanel>
+                                    <ListBox x:Name="BoundaryList" Height="70" SelectionChanged="BoundaryList_SelectionChanged"
+                                             MouseDoubleClick="BoundaryList_DoubleClick" ToolTip="Двойно щракване – преименуване. Прилагат се по ред." />
+                                    <WrapPanel>
+                                        <Button Content="Начертай" Click="DrawBoundary_Click" />
+                                        <Button Content="По контура на данните..." Click="BoundaryFromHull_Click" ToolTip="Външна граница по вдлъбнатата обвивка на точките – премахва дългите триъгълници по края" />
+                                        <Button Content="От полигона за редакция" Click="BoundaryFromSelection_Click" />
+                                        <Button Content="Тип..." Click="BoundaryType_Click" />
+                                        <Button Content="↑" Click="BoundaryUp_Click" ToolTip="По-рано в реда на прилагане" />
+                                        <Button Content="Изтрий" Click="DeleteBoundary_Click" />
+                                    </WrapPanel>
+                                </StackPanel>
+                            </GroupBox>
+
+                            <GroupBox Header="Изглед">
+                                <StackPanel>
+                                    <WrapPanel>
+                                        <CheckBox x:Name="ShowPointsBox" Content="Точки" IsChecked="True" Click="ViewOption_Changed" />
+                                        <CheckBox x:Name="ShowTrianglesBox" Content="Триъгълници" IsChecked="True" Click="ViewOption_Changed" Margin="10,3,2,3" />
+                                        <CheckBox x:Name="ShowContoursBox" Content="Хоризонтали" IsChecked="True" Click="ViewOption_Changed" Margin="10,3,2,3" />
+                                    </WrapPanel>
+                                    <CheckBox x:Name="ContourLabelsBox" Content="Надписи на котите по хоризонталите" IsChecked="True" Click="ViewOption_Changed" />
+                                    <CheckBox x:Name="BackgroundLabelsBox" Content="…и по другите видими повърхнини (терена под проекта)" IsChecked="True"
+                                              Click="ViewOption_Changed" Margin="22,2,2,3" />
+                                    <Grid Margin="0,2,0,0">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="60" />
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock x:Name="ContourStepLabel" Style="{StaticResource Lbl}" Text="Стъпка на хоризонталите, m:"
+                                                   TextTrimming="CharacterEllipsis" MaxWidth="190" />
+                                        <ComboBox Grid.Column="1" x:Name="ContourIntervalBox" IsEditable="True" Text="0.5" Margin="2"
+                                                  ToolTip="Изберете или въведете стъпка (прилага се веднага / с Enter)"
+                                                  SelectionChanged="ContourSetting_Changed" LostFocus="ContourSetting_Changed" KeyDown="ContourSetting_KeyDown">
+                                            <ComboBoxItem Content="0.1" />
+                                            <ComboBoxItem Content="0.2" />
+                                            <ComboBoxItem Content="0.25" />
+                                            <ComboBoxItem Content="0.5" />
+                                            <ComboBoxItem Content="1" />
+                                            <ComboBoxItem Content="2" />
+                                            <ComboBoxItem Content="2.5" />
+                                            <ComboBoxItem Content="5" />
+                                            <ComboBoxItem Content="10" />
+                                        </ComboBox>
+                                        <TextBlock Grid.Column="2" Style="{StaticResource Lbl}" Text="главна – всяка:" Margin="8,0,4,0" />
+                                        <ComboBox Grid.Column="3" x:Name="MajorEveryBox" IsEditable="True" Text="5" Margin="2"
+                                                  ToolTip="Всяка N-та хоризонтала е главна (удебелена и надписана)"
+                                                  SelectionChanged="ContourSetting_Changed" LostFocus="ContourSetting_Changed" KeyDown="ContourSetting_KeyDown">
+                                            <ComboBoxItem Content="2" />
+                                            <ComboBoxItem Content="4" />
+                                            <ComboBoxItem Content="5" />
+                                            <ComboBoxItem Content="10" />
+                                        </ComboBox>
+                                    </Grid>
+                                    <TextBlock x:Name="ContourHint" Foreground="#B35C00" TextWrapping="Wrap" Margin="4,0,4,2" Visibility="Collapsed" />
+                                    <DockPanel>
+                                        <TextBlock Style="{StaticResource Lbl}" Text="Оцветяване:" />
+                                        <ComboBox x:Name="ColorModeBox" SelectedIndex="1" SelectionChanged="ViewOption_Changed" Margin="2">
+                                            <ComboBoxItem Content="Без" />
+                                            <ComboBoxItem Content="По кота" />
+                                            <ComboBoxItem Content="По наклон" />
+                                        </ComboBox>
+                                    </DockPanel>
+                                </StackPanel>
+                            </GroupBox>
+
+                            <GroupBox Header="Редакция в полигон">
+                                <StackPanel>
+                                    <TextBlock TextWrapping="Wrap" Foreground="#555" Margin="2,0,2,4"
+                                               Text="Очертайте област с „Полигон за редакция“. Без полигон изглаждането се прилага върху цялата повърхнина." />
+                                    <DockPanel>
+                                        <TextBlock Style="{StaticResource Lbl}" Text="Δh, m:" Width="70" />
+                                        <Button DockPanel.Dock="Right" Content="Повдигни / понижи" Width="140" Click="RaiseLower_Click" />
+                                        <TextBox x:Name="DeltaZBox" Text="0.5" />
+                                    </DockPanel>
+                                    <DockPanel>
+                                        <TextBlock Style="{StaticResource Lbl}" Text="Кота, m:" Width="70" />
+                                        <Button DockPanel.Dock="Right" Content="Изравни на кота" Width="140" Click="Flatten_Click" />
+                                        <TextBox x:Name="FlattenZBox" Text="100" />
+                                    </DockPanel>
+                                    <DockPanel>
+                                        <TextBlock Style="{StaticResource Lbl}" Text="Итерации:" Width="70" />
+                                        <Button DockPanel.Dock="Right" Content="Изглади" Width="140" Click="Smooth_Click" />
+                                        <TextBox x:Name="SmoothBox" Text="3" />
+                                    </DockPanel>
+                                    <DockPanel>
+                                        <TextBlock Style="{StaticResource Lbl}" Text="Стъпка, m:" Width="70" />
+                                        <Button DockPanel.Dock="Right" Content="Пресемплирай" Width="140" Click="Resample_Click" ToolTip="Нова повърхнина – регулярна мрежа" />
+                                        <TextBox x:Name="ResampleBox" Text="5" />
+                                    </DockPanel>
+                                    <WrapPanel>
+                                        <Button Content="Изтрий точките вътре" Click="DeleteInside_Click" />
+                                        <Button Content="Изрежи отвън" Click="DeleteOutside_Click" />
+                                        <Button Content="Махни полигона" Click="ClearSelection_Click" />
+                                    </WrapPanel>
+                                </StackPanel>
+                            </GroupBox>
+                        </StackPanel>
+                    </ScrollViewer>
+                </TabItem>
+
+                <!-- ================= ВЕРТИКАЛНО ПЛАНИРАНЕ ================= -->
+                <TabItem Header="Вертикално планиране">
+                    <ScrollViewer VerticalScrollBarVisibility="Auto">
+                        <StackPanel Margin="4">
+                            <DockPanel>
+                                <TextBlock Style="{StaticResource Lbl}" Text="Съществуващ терен:" />
+                                <ComboBox x:Name="ExistingBox" DisplayMemberPath="Name" SelectionChanged="ExistingBox_SelectionChanged" Margin="2" />
+                            </DockPanel>
+
+                            <GroupBox Header="Платформи">
+                                <StackPanel>
+                                    <ListBox x:Name="PlatformList" Height="100" DisplayMemberPath="Name" SelectionChanged="PlatformList_SelectionChanged" />
+                                    <WrapPanel>
+                                        <Button Content="Нова (очертай)" Click="NewPlatform_Click" />
+                                        <Button Content="От полигона за редакция" Click="PlatformFromSelection_Click" />
+                                        <Button Content="Изтрий" Click="DeletePlatform_Click" />
+                                    </WrapPanel>
+                                </StackPanel>
+                            </GroupBox>
+
+                            <GroupBox Header="Параметри на платформата" x:Name="PlatformGroup">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition /><RowDefinition /><RowDefinition /><RowDefinition />
+                                        <RowDefinition /><RowDefinition /><RowDefinition /><RowDefinition />
+                                    </Grid.RowDefinitions>
+                                    <TextBlock Style="{StaticResource Lbl}" Grid.Row="0" Text="Име:" />
+                                    <TextBox Grid.Row="0" Grid.Column="1" x:Name="PlNameBox" />
+                                    <TextBlock Style="{StaticResource Lbl}" Grid.Row="1" Text="Проектна кота, m:" />
+                                    <TextBox Grid.Row="1" Grid.Column="1" x:Name="PlElevBox" />
+                                    <TextBlock Style="{StaticResource Lbl}" Grid.Row="2" Text="Наклон по X (изток), %:" />
+                                    <TextBox Grid.Row="2" Grid.Column="1" x:Name="PlSlopeXBox" />
+                                    <TextBlock Style="{StaticResource Lbl}" Grid.Row="3" Text="Наклон по Y (север), %:" />
+                                    <TextBox Grid.Row="3" Grid.Column="1" x:Name="PlSlopeYBox" />
+                                    <TextBlock Style="{StaticResource Lbl}" Grid.Row="4" Text="Откос в изкоп 1 :" />
+                                    <TextBox Grid.Row="4" Grid.Column="1" x:Name="PlCutBox" />
+                                    <TextBlock Style="{StaticResource Lbl}" Grid.Row="5" Text="Откос в насип 1 :" />
+                                    <TextBox Grid.Row="5" Grid.Column="1" x:Name="PlFillBox" />
+                                    <TextBlock Grid.Row="6" Grid.ColumnSpan="2" x:Name="PlInfoText" Foreground="#555" TextWrapping="Wrap" Margin="2" />
+                                    <WrapPanel Grid.Row="7" Grid.ColumnSpan="2">
+                                        <Button Content="Приложи" Click="ApplyPlatform_Click" FontWeight="Bold" />
+                                        <Button Content="Кота = средна от терена" Click="PlatformMeanElevation_Click" />
+                                    </WrapPanel>
+                                </Grid>
+                            </GroupBox>
+
+                            <GroupBox Header="Изчисления">
+                                <StackPanel>
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition /><RowDefinition /><RowDefinition />
+                                        </Grid.RowDefinitions>
+                                        <TextBlock Style="{StaticResource Lbl}" Text="Клетка на картограмата, m:" />
+                                        <TextBox Grid.Column="1" x:Name="CellBox" Text="2" />
+                                        <TextBlock Style="{StaticResource Lbl}" Grid.Row="1" Text="Коеф. на разрохкване:" ToolTip="Изкопът се умножава по този коефициент при балансиране" />
+                                        <TextBox Grid.Row="1" Grid.Column="1" x:Name="SwellBox" Text="1.0" />
+                                        <TextBlock Style="{StaticResource Lbl}" Grid.Row="2" Text="Стъпка на проектната TIN, m:" />
+                                        <TextBox Grid.Row="2" Grid.Column="1" x:Name="DesignStepBox" Text="1" />
+                                    </Grid>
+                                    <CheckBox x:Name="ShowCutFillBox" Content="Показвай картограмата на земните маси" IsChecked="True" Click="ViewOption_Changed" />
+                                    <CheckBox x:Name="ZoneOnlyBox" IsChecked="True"
+                                              Content="Проектната повърхнина – само в зоната на планирането"
+                                              ToolTip="Покрива само платформите и откосите до линията на догонване (без отметка – пълно копие на терена с вградения проект)" />
+                                    <WrapPanel>
+                                        <Button Content="Изчисли обеми" Click="ComputeVolumes_Click" FontWeight="Bold" />
+                                        <Button Content="Балансирай платформата" Click="Balance_Click" />
+                                        <Button Content="Създай проектна повърхнина" Click="BuildDesign_Click" />
+                                        <Button Content="Обеми: терен ↔ активна повърхнина" Click="CompareSurfaces_Click" />
+                                    </WrapPanel>
+                                </StackPanel>
+                            </GroupBox>
+
+                            <GroupBox Header="Резултати">
+                                <TextBox x:Name="ResultsText" FontFamily="Consolas" IsReadOnly="True" TextWrapping="Wrap" BorderThickness="0" Background="Transparent" />
+                            </GroupBox>
+                        </StackPanel>
+                    </ScrollViewer>
+                </TabItem>
+            </TabControl>
+        </Grid>
+    </DockPanel>
+</Window>
