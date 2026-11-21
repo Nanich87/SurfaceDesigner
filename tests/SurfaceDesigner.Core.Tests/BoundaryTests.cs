@@ -33,7 +33,9 @@ public class BoundaryTests
                 inside++;
             }
             else if (!expectedVisible(x, y))
+            {
                 Assert.Null(zc);
+            }
         }
 
         Assert.True(inside > 20, $"Твърде малко проби вътре: {inside}");
@@ -87,7 +89,9 @@ public class BoundaryTests
         for (int y = 0; y <= 10; y++)
         {
             for (int x = 0; x <= 10; x++)
+            {
                 pts.Add(new Point3(x, y, Math.Sin(x) + Math.Cos(y)));
+            }
         }
 
         var original = new Surface("g", pts);
@@ -172,7 +176,9 @@ public class BoundaryTests
         for (double y = -60; y <= 60; y += 5)
         {
             for (double x = -60; x <= 60; x += 5)
+            {
                 pts.Add(new Point3(x, y, 0));
+            }
         }
 
         var eg = new Surface("eg", pts);
@@ -212,6 +218,9 @@ public class BoundaryTests
             Assert.Equal(2, doc.Descendants(ns + "Boundary").Count());
             Assert.Equal(s.TriangleCount, doc.Descendants(ns + "F").Count());
         }
-        finally { File.Delete(path); }
+        finally
+        {
+            File.Delete(path);
+        }
     }
 }

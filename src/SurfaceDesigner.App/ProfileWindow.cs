@@ -83,7 +83,11 @@ public sealed class ProfileWindow : Window
             MarkerChanged?.Invoke(null);
             SectionsChanged?.Invoke(null, -1);
         };
-        Loaded += (_, _) => { RefreshSurfaces(); UpdateProfile(); };
+        Loaded += (_, _) =>
+        {
+            RefreshSurfaces();
+            UpdateProfile();
+        };
     }
 
     // =====================================================================
@@ -96,10 +100,20 @@ public sealed class ProfileWindow : Window
         top.Children.Add(_surfaceChecks);
         top.Children.Add(new TextBlock { Text = "   Вертикално преувеличение (празно = авто):", VerticalAlignment = VerticalAlignment.Center });
         _veBox.Margin = new Thickness(4, 2, 4, 2);
-        _veBox.KeyDown += (_, e) => { if (e.Key == Key.Enter) UpdateProfile(); };
+        _veBox.KeyDown += (_, e) =>
+        {
+            if (e.Key == Key.Enter)
+            {
+                UpdateProfile();
+            }
+        };
         _veBox.LostFocus += (_, _) => UpdateProfile();
         top.Children.Add(_veBox);
-        top.Children.Add(MakeButton("Обнови", (_, _) => { RefreshSurfaces(); UpdateProfile(); }));
+        top.Children.Add(MakeButton("Обнови", (_, _) =>
+        {
+            RefreshSurfaces();
+            UpdateProfile();
+        }));
         top.Children.Add(MakeButton("Експорт CSV...", (_, _) => ExportProfileCsv()));
 
         var dock = new DockPanel();
@@ -146,9 +160,20 @@ public sealed class ProfileWindow : Window
         foreach (var name in names)
         {
             var s = p.FindSurface(name);
-            if (s == null) continue;
-            if (name == _existingName) _profileChart.ExistingIndex = _profileChart.Series.Count;
-            else if (_profileChart.DesignIndex < 0) _profileChart.DesignIndex = _profileChart.Series.Count;
+            if (s == null)
+            {
+                continue;
+            }
+
+            if (name == _existingName)
+            {
+                _profileChart.ExistingIndex = _profileChart.Series.Count;
+            }
+            else if (_profileChart.DesignIndex < 0)
+            {
+                _profileChart.DesignIndex = _profileChart.Series.Count;
+            }
+
             _profileChart.Series.Add(new ChartSeries(name, ColorFor(name, ref k), ProfileSampler.Sample(s, _line)));
         }
 
@@ -159,7 +184,10 @@ public sealed class ProfileWindow : Window
         foreach (var s in _profileChart.Series)
         {
             var z = s.Points.Where(q => q.Z.HasValue).Select(q => q.Z!.Value).ToList();
-            if (z.Count > 0) sb.Append(string.Create(Ci, $"   |   {s.Name}: {z.Min():F2} … {z.Max():F2}"));
+            if (z.Count > 0)
+            {
+                sb.Append(string.Create(Ci, $"   |   {s.Name}: {z.Min():F2} … {z.Max():F2}"));
+            }
         }
 
         if (_profileChart.ExistingIndex >= 0 && _profileChart.DesignIndex >= 0)
@@ -175,9 +203,17 @@ public sealed class ProfileWindow : Window
 
     private void ExportProfileCsv()
     {
-        if (_profileChart.Series.Count == 0) return;
+        if (_profileChart.Series.Count == 0)
+        {
+            return;
+        }
+
         var dlg = new SaveFileDialog { Filter = "CSV (*.csv)|*.csv", FileName = "profil.csv" };
-        if (dlg.ShowDialog(this) != true) return;
+        if (dlg.ShowDialog(this) != true)
+        {
+            return;
+        }
+
         var stations = _profileChart.Series.SelectMany(s => s.Points.Select(q => q.Station)).Distinct().OrderBy(s => s).ToList();
         var sb = new StringBuilder("Километраж;Км;X;Y;" + string.Join(";", _profileChart.Series.Select(s => s.Name)) + "\n");
         foreach (var st in stations)
@@ -185,7 +221,10 @@ public sealed class ProfileWindow : Window
             var pt = Alignment.PointAt(_line, st).Point;
             sb.Append(string.Create(Ci, $"{st:F3};{Alignment.FormatStation(st)};{pt.X:F3};{pt.Y:F3}"));
             foreach (var s in _profileChart.Series)
+            {
                 sb.Append(';').Append(ProfileSampler.ElevationAtStation(s.Points, st)?.ToString("F3", Ci) ?? "");
+            }
+
             sb.Append('\n');
         }
 
@@ -199,11 +238,16 @@ public sealed class ProfileWindow : Window
     {
         var top = new WrapPanel { Margin = new Thickness(4) };
         void Lbl(string t) => top.Children.Add(new TextBlock { Text = t, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(6, 0, 2, 0) });
-        Lbl("Терен:"); top.Children.Add(_egBox);
-        Lbl("Проект:"); top.Children.Add(_designBox);
-        Lbl("Интервал, m:"); top.Children.Add(_intervalBox);
-        Lbl("Ширина вляво, m:"); top.Children.Add(_leftBox);
-        Lbl("вдясно, m:"); top.Children.Add(_rightBox);
+        Lbl("Терен:");
+        top.Children.Add(_egBox);
+        Lbl("Проект:");
+        top.Children.Add(_designBox);
+        Lbl("Интервал, m:");
+        top.Children.Add(_intervalBox);
+        Lbl("Ширина вляво, m:");
+        top.Children.Add(_leftBox);
+        Lbl("вдясно, m:");
+        top.Children.Add(_rightBox);
         top.Children.Add(MakeButton("Генерирай", (_, _) => GenerateSections()));
 
         var nav = new WrapPanel { Margin = new Thickness(4, 0, 4, 4) };
@@ -241,7 +285,11 @@ public sealed class ProfileWindow : Window
             return;
         }
 
-        if (_length / interval > 5000) { MessageBox.Show(this, "Твърде много разрези – увеличете интервала.", Title); return; }
+        if (_length / interval > 5000)
+        {
+            MessageBox.Show(this, "Твърде много разрези – увеличете интервала.", Title);
+            return;
+        }
 
         _sections = Alignment.CrossSections(_line, interval, left, right).Select(cs =>
         {
@@ -263,7 +311,11 @@ public sealed class ProfileWindow : Window
 
     private void Step(int d)
     {
-        if (_sections.Count == 0) return;
+        if (_sections.Count == 0)
+        {
+            return;
+        }
+
         _stationBox.SelectedIndex = Math.Clamp(_stationBox.SelectedIndex + d, 0, _sections.Count - 1);
     }
 
@@ -282,7 +334,11 @@ public sealed class ProfileWindow : Window
 
     private void ShowSection(int i)
     {
-        if (i < 0 || i >= _sections.Count) return;
+        if (i < 0 || i >= _sections.Count)
+        {
+            return;
+        }
+
         var s = _sections[i];
         string egName = ((Surface)_egBox.SelectedItem).Name, dName = ((Surface)_designBox.SelectedItem).Name;
         _sectionChart.Series.Clear();
@@ -306,7 +362,12 @@ public sealed class ProfileWindow : Window
     private void OnSectionHover(double? offset)
     {
         int i = _stationBox.SelectedIndex;
-        if (offset is not double o || i < 0 || i >= _sections.Count) { MarkerChanged?.Invoke(null); return; }
+        if (offset is not double o || i < 0 || i >= _sections.Count)
+        {
+            MarkerChanged?.Invoke(null);
+            return;
+        }
+
         var l = _sections[i].Line;
         double width = l.LeftWidth + l.RightWidth;
         MarkerChanged?.Invoke(l.Left + (l.Right - l.Left) * ((o + l.LeftWidth) / width));
@@ -314,9 +375,18 @@ public sealed class ProfileWindow : Window
 
     private void ExportSectionsCsv()
     {
-        if (_sections.Count == 0) { MessageBox.Show(this, "Първо генерирайте разрезите.", Title); return; }
+        if (_sections.Count == 0)
+        {
+            MessageBox.Show(this, "Първо генерирайте разрезите.", Title);
+            return;
+        }
+
         var dlg = new SaveFileDialog { Filter = "CSV (*.csv)|*.csv", FileName = "razrezi.csv" };
-        if (dlg.ShowDialog(this) != true) return;
+        if (dlg.ShowDialog(this) != true)
+        {
+            return;
+        }
+
         var sb = new StringBuilder("Километраж;Км;Площ изкоп, m2;Площ насип, m2;Обем изкоп, m3;Обем насип, m3;Натрупан изкоп, m3;Натрупан насип, m3\n");
         double accC = 0, accF = 0;
         for (int i = 0; i < _sections.Count; i++)
@@ -329,7 +399,8 @@ public sealed class ProfileWindow : Window
                 vf = (_sections[i].Areas.Fill + _sections[i - 1].Areas.Fill) / 2 * ds;
             }
 
-            accC += vc; accF += vf;
+            accC += vc;
+            accF += vf;
             var s = _sections[i];
             sb.Append(string.Create(
                 Ci,

@@ -21,7 +21,10 @@ public static class SampleTerrain
         }
 
         foreach (var (x, y) in new[] { (0.0, 0.0), (size, 0.0), (size, size), (0.0, size) })
+        {
             pts.Add(new Point3(x, y, H(x, y)));
+        }
+
         for (int i = 0; i < pointCount; i++)
         {
             double x = rnd.NextDouble() * size, y = rnd.NextDouble() * size;

@@ -10,12 +10,23 @@ public sealed class Polygon2
         var list = new List<Point2>();
         foreach (var p in vertices)
         {
-            if (list.Count > 0 && Point2.Distance(list[^1], p) < 1e-9) continue;
+            if (list.Count > 0 && Point2.Distance(list[^1], p) < 1e-9)
+            {
+                continue;
+            }
+
             list.Add(p);
         }
 
-        if (list.Count > 1 && Point2.Distance(list[0], list[^1]) < 1e-9) list.RemoveAt(list.Count - 1);
-        if (list.Count < 3) throw new ArgumentException("Многоъгълникът трябва да има поне 3 различни върха.");
+        if (list.Count > 1 && Point2.Distance(list[0], list[^1]) < 1e-9)
+        {
+            list.RemoveAt(list.Count - 1);
+        }
+
+        if (list.Count < 3)
+        {
+            throw new ArgumentException("Многоъгълникът трябва да има поне 3 различни върха.");
+        }
 
         _v = list.ToArray();
         Bounds = Bounds2.FromPoints(_v);
@@ -30,7 +41,10 @@ public sealed class Polygon2
         {
             double s = 0;
             for (int i = 0, j = _v.Length - 1; i < _v.Length; j = i++)
+            {
                 s += _v[j].X * _v[i].Y - _v[i].X * _v[j].Y;
+            }
+
             return s / 2;
         }
     }
@@ -42,7 +56,11 @@ public sealed class Polygon2
         get
         {
             double s = 0;
-            for (int i = 0, j = _v.Length - 1; i < _v.Length; j = i++) s += Point2.Distance(_v[i], _v[j]);
+            for (int i = 0, j = _v.Length - 1; i < _v.Length; j = i++)
+            {
+                s += Point2.Distance(_v[i], _v[j]);
+            }
+
             return s;
         }
     }
@@ -61,7 +79,10 @@ public sealed class Polygon2
             }
 
             if (Math.Abs(a) < 1e-12)
+            {
                 return new Point2(_v.Average(p => p.X), _v.Average(p => p.Y));
+            }
+
             a *= 0.5;
             return new Point2(cx / (6 * a), cy / (6 * a));
         }
@@ -70,7 +91,11 @@ public sealed class Polygon2
     /// <summary>Проверка дали точка е вътре (метод на лъча).</summary>
     public bool Contains(double x, double y)
     {
-        if (!Bounds.Contains(x, y)) return false;
+        if (!Bounds.Contains(x, y))
+        {
+            return false;
+        }
+
         bool inside = false;
         for (int i = 0, j = _v.Length - 1; i < _v.Length; j = i++)
         {
@@ -78,7 +103,9 @@ public sealed class Polygon2
             var b = _v[j];
             if ((a.Y > y) != (b.Y > y) &&
                 x < (b.X - a.X) * (y - a.Y) / (b.Y - a.Y) + a.X)
+            {
                 inside = !inside;
+            }
         }
 
         return inside;
@@ -97,7 +124,11 @@ public sealed class Polygon2
             var q = ClosestOnSegment(_v[j], _v[i], p);
             double dx = q.X - x, dy = q.Y - y;
             double d2 = dx * dx + dy * dy;
-            if (d2 < bestD2) { bestD2 = d2; best = q; }
+            if (d2 < bestD2)
+            {
+                bestD2 = d2;
+                best = q;
+            }
         }
 
         return (best, Math.Sqrt(bestD2));
@@ -111,9 +142,16 @@ public sealed class Polygon2
             var a = _v[i];
             var b = _v[(i + 1) % _v.Length];
             yield return a;
-            if (step <= 0) continue;
+            if (step <= 0)
+            {
+                continue;
+            }
+
             int n = (int)Math.Floor(Point2.Distance(a, b) / step);
-            for (int k = 1; k < n; k++) yield return a + (b - a) * ((double)k / n);
+            for (int k = 1; k < n; k++)
+            {
+                yield return a + (b - a) * ((double)k / n);
+            }
         }
     }
 
@@ -121,7 +159,11 @@ public sealed class Polygon2
     {
         var ab = b - a;
         double len2 = Point2.Dot(ab, ab);
-        if (len2 < 1e-24) return a;
+        if (len2 < 1e-24)
+        {
+            return a;
+        }
+
         double t = Math.Clamp(Point2.Dot(p - a, ab) / len2, 0, 1);
         return a + ab * t;
     }

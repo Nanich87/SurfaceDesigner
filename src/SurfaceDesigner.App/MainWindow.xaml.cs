@@ -71,24 +71,40 @@ public partial class MainWindow : Window
 
         PreviewKeyDown += (_, e) =>
         {
-            if (e.Key == Key.Home && Keyboard.FocusedElement is not TextBox) { View.ZoomExtents(); e.Handled = true; }
+            if (e.Key == Key.Home && Keyboard.FocusedElement is not TextBox)
+            {
+                View.ZoomExtents();
+                e.Handled = true;
+            }
         };
         Closing += (_, e) =>
         {
             e.Cancel = !ConfirmDiscard();
-            if (!e.Cancel) ClearAutosave(); // записано или съзнателно отхвърлено – копието не трябва
+            if (!e.Cancel)
+            {
+                ClearAutosave(); // записано или съзнателно отхвърлено – копието не трябва
+            }
         };
         Closed += (_, _) => _autosave?.Dispose();
         Loaded += (_, _) =>
         {
-            if (OfferAutosaveRecovery()) return;
+            if (OfferAutosaveRecovery())
+            {
+                return;
+            }
+
             var args = Environment.GetCommandLineArgs();
             if (args.Length > 1 && File.Exists(args[1]))
             {
-                if (!OpenProjectFile(Path.GetFullPath(args[1]))) RefreshAll(zoom: true);
+                if (!OpenProjectFile(Path.GetFullPath(args[1])))
+                {
+                    RefreshAll(zoom: true);
+                }
             }
             else
+            {
                 RefreshAll(zoom: true);
+            }
         };
     }
 
@@ -102,7 +118,11 @@ public partial class MainWindow : Window
         _updatingUi = true;
         try
         {
-            if (_active != null && !_project.Surfaces.Contains(_active)) _active = null;
+            if (_active != null && !_project.Surfaces.Contains(_active))
+            {
+                _active = null;
+            }
+
             _active ??= _project.Surfaces.FirstOrDefault();
 
             SurfaceList.ItemsSource = null;
@@ -128,7 +148,10 @@ public partial class MainWindow : Window
             BoundaryList.ItemsSource = _active?.Boundaries;
             BoundaryList.SelectedItem = selBoundary != null && _active != null && _active.Boundaries.Contains(selBoundary) ? selBoundary : null;
         }
-        finally { _updatingUi = false; }
+        finally
+        {
+            _updatingUi = false;
+        }
 
         View.Project = _project;
         View.ActiveSurface = _active;
@@ -142,7 +165,14 @@ public partial class MainWindow : Window
         LoadPlatformFields();
         UpdateTitle();
 
-        if (zoom) View.ZoomExtents(); else View.RebuildScene();
+        if (zoom)
+        {
+            View.ZoomExtents();
+        }
+        else
+        {
+            View.RebuildScene();
+        }
     }
 
     private void UpdateTitle()
@@ -155,7 +185,11 @@ public partial class MainWindow : Window
     private void PushUndo()
     {
         _undo.Add((ProjectSerializer.ToJson(_project), _active?.Name, SelectedPlatform != null ? _project.Platforms.IndexOf(SelectedPlatform) : -1));
-        if (_undo.Count > MaxUndo) _undo.RemoveAt(0);
+        if (_undo.Count > MaxUndo)
+        {
+            _undo.RemoveAt(0);
+        }
+
         MarkDirty();
     }
 
@@ -191,7 +225,11 @@ public partial class MainWindow : Window
     {
         foreach (var d in _project.Surfaces)
         {
-            if (d.GradingSource is not { } src) continue;
+            if (d.GradingSource is not { } src)
+            {
+                continue;
+            }
+
             src.GeneratedVersion = d.Version;
             var eg = _project.FindSurface(src.ExistingSurfaceName);
             src.LastInputKey = eg != null ? src.InputKey(eg, _project.Platforms) : null;
@@ -203,7 +241,11 @@ public partial class MainWindow : Window
     {
         foreach (var d in _project.Surfaces)
         {
-            if (d.GradingSource is not { } src || src.GeneratedVersion < 0 || d.Version == src.GeneratedVersion) continue;
+            if (d.GradingSource is not { } src || src.GeneratedVersion < 0 || d.Version == src.GeneratedVersion)
+            {
+                continue;
+            }
+
             d.GradingSource = null;
             Info($"„{d.Name}“ е редактирана ръчно и вече не се обновява автоматично от платформите " +
                  "(може да се свърже отново с отметката в „Информация“).");
@@ -212,7 +254,11 @@ public partial class MainWindow : Window
 
     private void ScheduleDesignRegeneration()
     {
-        if (!_project.Surfaces.Any(s => s.GradingSource != null)) return;
+        if (!_project.Surfaces.Any(s => s.GradingSource != null))
+        {
+            return;
+        }
+
         _designTimer.Stop();
         _designTimer.Start();
     }
@@ -231,7 +277,10 @@ public partial class MainWindow : Window
             }
 
             string key = src.InputKey(eg, _project.Platforms);
-            if (key == src.LastInputKey) continue; // входните данни не са се променили
+            if (key == src.LastInputKey)
+            {
+                continue; // входните данни не са се променили
+            }
 
             // моментни копия – изчислението е във фонов режим, а потребителят може да продължи да редактира
             var egCopy = eg.Clone();
@@ -253,8 +302,15 @@ public partial class MainWindow : Window
             }
 
             // по време на изчислението е започнало ново (по-актуално) – този резултат се пропуска
-            if (job != _designJob || !_project.Surfaces.Contains(d) || !ReferenceEquals(d.GradingSource, src)) return;
-            if (result == null) continue;
+            if (job != _designJob || !_project.Surfaces.Contains(d) || !ReferenceEquals(d.GradingSource, src))
+            {
+                return;
+            }
+
+            if (result == null)
+            {
+                continue;
+            }
 
             d.ReplaceContentFrom(result);
             src.GeneratedVersion = d.Version;
@@ -269,7 +325,11 @@ public partial class MainWindow : Window
 
     private void DesignLinkBox_Click(object sender, RoutedEventArgs e)
     {
-        if (_active == null) return;
+        if (_active == null)
+        {
+            return;
+        }
+
         if (DesignLinkBox.IsChecked != true)
         {
             PushUndo();
@@ -287,7 +347,11 @@ public partial class MainWindow : Window
             return;
         }
 
-        if (!NumberParser.TryParse(DesignStepBox.Text, out var step) || step < 0.1) step = 1;
+        if (!NumberParser.TryParse(DesignStepBox.Text, out var step) || step < 0.1)
+        {
+            step = 1;
+        }
+
         if (MessageBox.Show(
             this,
             $"„{_active.Name}“ ще се преизчисли от терена „{eg.Name}“ и платформите и ще се обновява автоматично.\n" +
@@ -308,7 +372,11 @@ public partial class MainWindow : Window
 
     private GradingModel? GetGradingModel()
     {
-        if (_gradingModelValid) return _gradingModel;
+        if (_gradingModelValid)
+        {
+            return _gradingModel;
+        }
+
         _gradingModelValid = true;
         var eg = _project.ExistingSurface;
         _gradingModel = eg != null && eg.TriangleCount > 0 && _project.Platforms.Count > 0
@@ -319,7 +387,11 @@ public partial class MainWindow : Window
 
     private bool TryRead(TextBox box, string name, out double value, double min = double.NegativeInfinity, double max = double.PositiveInfinity)
     {
-        if (NumberParser.TryParse(box.Text, out value) && value >= min && value <= max) return true;
+        if (NumberParser.TryParse(box.Text, out value) && value >= min && value <= max)
+        {
+            return true;
+        }
+
         MessageBox.Show(this, $"Невалидна стойност за „{name}“.", "Въвеждане", MessageBoxButton.OK, MessageBoxImage.Warning);
         box.Focus();
         box.SelectAll();
@@ -332,14 +404,22 @@ public partial class MainWindow : Window
 
     private bool RequireActive()
     {
-        if (_active != null) return true;
+        if (_active != null)
+        {
+            return true;
+        }
+
         Warn("Няма активна повърхнина. Импортирайте точки или създайте нова повърхнина.");
         return false;
     }
 
     private Polygon2? RequireSelection()
     {
-        if (_selection is { Count: >= 3 }) return new Polygon2(_selection);
+        if (_selection is { Count: >= 3 })
+        {
+            return new Polygon2(_selection);
+        }
+
         Warn("Първо очертайте полигон с инструмента „Полигон за редакция“.");
         return null;
     }
@@ -349,8 +429,14 @@ public partial class MainWindow : Window
         Cursor = Cursors.Wait;
         RightPanel.IsEnabled = false;
         Info(message);
-        try { await action(); }
-        catch (Exception ex) { MessageBox.Show(this, ex.Message, "Грешка", MessageBoxButton.OK, MessageBoxImage.Error); }
+        try
+        {
+            await action();
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(this, ex.Message, "Грешка", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
         finally
         {
             Cursor = null;
@@ -361,7 +447,12 @@ public partial class MainWindow : Window
     private void SetTool(ToolMode mode)
     {
         foreach (var rb in Tools.Items.OfType<RadioButton>())
-            if ((string)rb.Tag == mode.ToString()) rb.IsChecked = true;
+        {
+            if ((string)rb.Tag == mode.ToString())
+            {
+                rb.IsChecked = true;
+            }
+        }
     }
 
     private static double MeanElevation(Surface s, Polygon2 poly)
@@ -374,16 +465,30 @@ public partial class MainWindow : Window
         {
             for (double x = b.MinX + step / 2; x < b.MaxX; x += step)
             {
-                if (!poly.Contains(x, y)) continue;
+                if (!poly.Contains(x, y))
+                {
+                    continue;
+                }
+
                 var z = s.ElevationAt(x, y);
-                if (z.HasValue) { sum += z.Value; n++; }
+                if (z.HasValue)
+                {
+                    sum += z.Value;
+                    n++;
+                }
             }
         }
 
         if (n == 0)
         {
             foreach (var v in poly.Vertices)
-                if (s.ElevationAt(v.X, v.Y) is { } z) { sum += z; n++; }
+            {
+                if (s.ElevationAt(v.X, v.Y) is { } z)
+                {
+                    sum += z;
+                    n++;
+                }
+            }
         }
 
         return n > 0 ? Math.Round(sum / n, 2) : 0;
@@ -394,15 +499,27 @@ public partial class MainWindow : Window
     // =====================================================================
     private bool ConfirmDiscard()
     {
-        if (!_dirty) return true;
+        if (!_dirty)
+        {
+            return true;
+        }
+
         var r = MessageBox.Show(
             this,
             "Проектът има незаписани промени. Да се запишат ли?",
             "Surface Designer",
             MessageBoxButton.YesNoCancel,
             MessageBoxImage.Question);
-        if (r == MessageBoxResult.Cancel) return false;
-        if (r == MessageBoxResult.Yes) return SaveProject(_projectPath);
+        if (r == MessageBoxResult.Cancel)
+        {
+            return false;
+        }
+
+        if (r == MessageBoxResult.Yes)
+        {
+            return SaveProject(_projectPath);
+        }
+
         return true;
     }
 
@@ -427,14 +544,25 @@ public partial class MainWindow : Window
 
     private void New_Executed(object sender, ExecutedRoutedEventArgs e)
     {
-        if (ConfirmDiscard()) LoadProject(new Project(), null);
+        if (ConfirmDiscard())
+        {
+            LoadProject(new Project(), null);
+        }
     }
 
     private void Open_Executed(object sender, ExecutedRoutedEventArgs e)
     {
-        if (!ConfirmDiscard()) return;
+        if (!ConfirmDiscard())
+        {
+            return;
+        }
+
         var dlg = new OpenFileDialog { Filter = ProjectFilter };
-        if (dlg.ShowDialog(this) != true) return;
+        if (dlg.ShowDialog(this) != true)
+        {
+            return;
+        }
+
         OpenProjectFile(dlg.FileName);
     }
 
@@ -471,7 +599,10 @@ public partial class MainWindow : Window
                 "Повреден проект",
                 MessageBoxButton.YesNo,
                 MessageBoxImage.Warning);
-            if (answer != MessageBoxResult.Yes) return false;
+            if (answer != MessageBoxResult.Yes)
+            {
+                return false;
+            }
 
             try
             {
@@ -505,7 +636,11 @@ public partial class MainWindow : Window
     // ---------------------------------------------------------------------
     private async Task AutosaveAsync()
     {
-        if (_autosave == null || _autosaving || !_dirty || _changeVersion == _autosavedVersion) return;
+        if (_autosave == null || _autosaving || !_dirty || _changeVersion == _autosavedVersion)
+        {
+            return;
+        }
+
         _autosaving = true;
         try
         {
@@ -514,19 +649,27 @@ public partial class MainWindow : Window
             string json = ProjectSerializer.ToJson(_project); // в UI нишката – консистентно състояние
             string? path = _projectPath;
             if (await Task.Run(() => _autosave.Save(json, path, generation)))
+            {
                 _autosavedVersion = version;
+            }
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
             Info($"Автоматичният запис не успя: {ex.Message}");
         }
-        finally { _autosaving = false; }
+        finally
+        {
+            _autosaving = false;
+        }
     }
 
     private void ClearAutosave()
     {
         _autosavedVersion = _changeVersion;
-        try { _autosave?.Clear(); }
+        try
+        {
+            _autosave?.Clear();
+        }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { }
     }
 
@@ -536,10 +679,20 @@ public partial class MainWindow : Window
     /// </summary>
     private bool OfferAutosaveRecovery()
     {
-        if (_autosave == null) return false;
+        if (_autosave == null)
+        {
+            return false;
+        }
+
         IReadOnlyList<AutosaveEntry> entries;
-        try { entries = _autosave.FindRecoverable(); }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { return false; }
+        try
+        {
+            entries = _autosave.FindRecoverable();
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            return false;
+        }
 
         foreach (var entry in entries)
         {
@@ -553,11 +706,22 @@ public partial class MainWindow : Window
                 MessageBoxButton.YesNoCancel,
                 MessageBoxImage.Question);
 
-            if (answer == MessageBoxResult.No) { _autosave.Discard(entry); continue; }
-            if (answer != MessageBoxResult.Yes) continue;
+            if (answer == MessageBoxResult.No)
+            {
+                _autosave.Discard(entry);
+                continue;
+            }
+
+            if (answer != MessageBoxResult.Yes)
+            {
+                continue;
+            }
 
             Project project;
-            try { project = ProjectSerializer.Load(entry.ProjectFile); }
+            try
+            {
+                project = ProjectSerializer.Load(entry.ProjectFile);
+            }
             catch (Exception ex)
             {
                 MessageBox.Show(
@@ -577,7 +741,10 @@ public partial class MainWindow : Window
             try
             {
                 if (_autosave.Save(ProjectSerializer.ToJson(_project), _projectPath, _autosave.Generation))
+                {
                     _autosavedVersion = _changeVersion;
+                }
+
                 _autosave.Discard(entry);
             }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { }
@@ -597,7 +764,11 @@ public partial class MainWindow : Window
         if (path == null)
         {
             var dlg = new SaveFileDialog { Filter = ProjectFilter, DefaultExt = ".sdproj" };
-            if (dlg.ShowDialog(this) != true) return false;
+            if (dlg.ShowDialog(this) != true)
+            {
+                return false;
+            }
+
             path = dlg.FileName;
         }
 
@@ -612,7 +783,12 @@ public partial class MainWindow : Window
 
     private void Undo_Executed(object sender, ExecutedRoutedEventArgs e)
     {
-        if (_undo.Count == 0) { Info("Няма какво да се отмени."); return; }
+        if (_undo.Count == 0)
+        {
+            Info("Няма какво да се отмени.");
+            return;
+        }
+
         var (json, active, platform) = _undo[^1];
         _undo.RemoveAt(_undo.Count - 1);
         _project = ProjectSerializer.FromJson(json);
@@ -633,7 +809,10 @@ public partial class MainWindow : Window
         {
             Filter = "Точки (*.txt;*.csv;*.xyz;*.pts;*.dat)|*.txt;*.csv;*.xyz;*.pts;*.dat|Всички файлове (*.*)|*.*",
         };
-        if (dlg.ShowDialog(this) != true) return;
+        if (dlg.ShowDialog(this) != true)
+        {
+            return;
+        }
 
         var geo = MessageBox.Show(
             this,
@@ -642,10 +821,17 @@ public partial class MainWindow : Window
             "Импорт на точки",
             MessageBoxButton.YesNoCancel,
             MessageBoxImage.Question);
-        if (geo == MessageBoxResult.Cancel) return;
+        if (geo == MessageBoxResult.Cancel)
+        {
+            return;
+        }
 
         var pts = PointFileReader.Read(dlg.FileName, geo == MessageBoxResult.Yes);
-        if (pts.Count == 0) { Warn("Не са намерени точки във файла."); return; }
+        if (pts.Count == 0)
+        {
+            Warn("Не са намерени точки във файла.");
+            return;
+        }
 
         PushUndo();
         var name = _project.UniqueSurfaceName(Path.GetFileNameWithoutExtension(dlg.FileName));
@@ -661,7 +847,11 @@ public partial class MainWindow : Window
     private async void ImportLandXml_Click(object sender, RoutedEventArgs e)
     {
         var dlg = new OpenFileDialog { Filter = "LandXML (*.xml)|*.xml|Всички файлове (*.*)|*.*" };
-        if (dlg.ShowDialog(this) != true) return;
+        if (dlg.ShowDialog(this) != true)
+        {
+            return;
+        }
+
         string file = dlg.FileName;
 
         await RunBusy("Импорт от LandXML...", async () =>
@@ -669,7 +859,11 @@ public partial class MainWindow : Window
             var result = await Task.Run(() =>
             {
                 var r = LandXmlReader.Read(file);
-                foreach (var s in r.Surfaces) s.EnsureTriangulated();
+                foreach (var s in r.Surfaces)
+                {
+                    s.EnsureTriangulated();
+                }
+
                 return r;
             });
             if (result.Surfaces.Count == 0)
@@ -701,9 +895,17 @@ public partial class MainWindow : Window
 
     private void ExportPoints_Click(object sender, RoutedEventArgs e)
     {
-        if (!RequireActive()) return;
+        if (!RequireActive())
+        {
+            return;
+        }
+
         var dlg = new SaveFileDialog { Filter = "Текстов файл (*.txt)|*.txt|CSV (*.csv)|*.csv", FileName = _active!.Name };
-        if (dlg.ShowDialog(this) != true) return;
+        if (dlg.ShowDialog(this) != true)
+        {
+            return;
+        }
+
         var geo = MessageBox.Show(
             this,
             "Запис в геодезическа система (X – север, Y – изток)?",
@@ -716,18 +918,35 @@ public partial class MainWindow : Window
 
     private void ExportLandXml_Click(object sender, RoutedEventArgs e)
     {
-        if (_project.Surfaces.Count == 0) { Warn("Няма повърхнини за експорт."); return; }
+        if (_project.Surfaces.Count == 0)
+        {
+            Warn("Няма повърхнини за експорт.");
+            return;
+        }
+
         var dlg = new SaveFileDialog { Filter = "LandXML (*.xml)|*.xml", FileName = "surfaces.xml" };
-        if (dlg.ShowDialog(this) != true) return;
+        if (dlg.ShowDialog(this) != true)
+        {
+            return;
+        }
+
         LandXmlWriter.Write(dlg.FileName, _project.Surfaces.Where(s => s.TriangleCount > 0));
         Info($"LandXML записан: {dlg.FileName}");
     }
 
     private void ExportCutFill_Click(object sender, RoutedEventArgs e)
     {
-        if (_lastVolumes == null) { Warn("Първо изчислете обемите."); return; }
+        if (_lastVolumes == null)
+        {
+            Warn("Първо изчислете обемите.");
+            return;
+        }
+
         var dlg = new SaveFileDialog { Filter = "CSV (*.csv)|*.csv", FileName = "kartograma.csv" };
-        if (dlg.ShowDialog(this) != true) return;
+        if (dlg.ShowDialog(this) != true)
+        {
+            return;
+        }
 
         var g = _lastVolumes.Grid;
         var sb = new StringBuilder();
@@ -738,7 +957,11 @@ public partial class MainWindow : Window
             for (int ix = 0; ix < g.Nx; ix++)
             {
                 int i = g.Index(ix, iy);
-                if (double.IsNaN(g.MeanDepth[i])) continue;
+                if (double.IsNaN(g.MeanDepth[i]))
+                {
+                    continue;
+                }
+
                 var c = g.CellBounds(ix, iy).Center;
                 sb.AppendLine(string.Create(ci, $"{ix + 1};{iy + 1};{c.X:F3};{c.Y:F3};{g.MeanDepth[i]:F3};{g.Cut[i]:F3};{g.Fill[i]:F3}"));
             }
@@ -769,7 +992,11 @@ public partial class MainWindow : Window
     // =====================================================================
     private void Tool_Checked(object sender, RoutedEventArgs e)
     {
-        if (View == null) return;
+        if (View == null)
+        {
+            return;
+        }
+
         if (sender is RadioButton { Tag: string tag } && Enum.TryParse<ToolMode>(tag, out var mode))
         {
             View.Tool = mode;
@@ -794,13 +1021,18 @@ public partial class MainWindow : Window
     {
         var sb = new StringBuilder(string.Create(CultureInfo.InvariantCulture, $"X = {w.X:F3}   Y = {w.Y:F3}"));
         if (_active?.ElevationAt(w.X, w.Y) is { } z)
+        {
             sb.Append(string.Create(CultureInfo.InvariantCulture, $"   Z = {z:F3}"));
+        }
+
         var model = GetGradingModel();
         if (model != null && model.InfluenceBounds.Contains(w.X, w.Y) && model.DesignElevation(w.X, w.Y) is { } zd)
         {
             sb.Append(string.Create(CultureInfo.InvariantCulture, $"   Zпр = {zd:F3}"));
             if (model.Existing.ElevationAt(w.X, w.Y) is { } eg)
+            {
                 sb.Append(string.Create(CultureInfo.InvariantCulture, $"   h = {zd - eg:+0.000;-0.000;0.000}"));
+            }
         }
 
         CursorText.Text = sb.ToString();
@@ -822,7 +1054,11 @@ public partial class MainWindow : Window
             "Нова точка",
             string.Create(CultureInfo.InvariantCulture, $"Кота на точката (X = {w.X:F3}, Y = {w.Y:F3}):"),
             Math.Round(def, 3));
-        if (z == null) return;
+        if (z == null)
+        {
+            return;
+        }
+
         PushUndo();
         _active.AddPoint(new Point3(w.X, w.Y, z.Value));
         DataChanged();
@@ -830,7 +1066,11 @@ public partial class MainWindow : Window
 
     private void OnMovePoint(int index, Point2 w)
     {
-        if (_active == null) return;
+        if (_active == null)
+        {
+            return;
+        }
+
         PushUndo();
         var p = _active.Points[index];
         _active.SetPoint(index, p with { X = w.X, Y = w.Y });
@@ -839,10 +1079,18 @@ public partial class MainWindow : Window
 
     private void OnEditPoint(int index)
     {
-        if (_active == null) return;
+        if (_active == null)
+        {
+            return;
+        }
+
         var p = _active.Points[index];
         var z = InputDialog.AskNumber(this, "Кота на точка", "Нова кота:", p.Z);
-        if (z == null) return;
+        if (z == null)
+        {
+            return;
+        }
+
         PushUndo();
         _active.SetPoint(index, p with { Z = z.Value });
         DataChanged();
@@ -850,7 +1098,11 @@ public partial class MainWindow : Window
 
     private void OnDeletePoint(int index)
     {
-        if (_active == null) return;
+        if (_active == null)
+        {
+            return;
+        }
+
         PushUndo();
         _active.RemovePointAt(index);
         DataChanged();
@@ -867,10 +1119,25 @@ public partial class MainWindow : Window
             return;
         }
 
-        if (mode == ToolMode.DrawPlatform) CreatePlatform(polygon);
-        if (mode == ToolMode.DrawBreakline) CreateBreakline(polygon);
-        if (mode == ToolMode.DrawBoundary) CreateBoundary(polygon);
-        if (mode == ToolMode.DrawProfile) OpenProfile(polygon);
+        if (mode == ToolMode.DrawPlatform)
+        {
+            CreatePlatform(polygon);
+        }
+
+        if (mode == ToolMode.DrawBreakline)
+        {
+            CreateBreakline(polygon);
+        }
+
+        if (mode == ToolMode.DrawBoundary)
+        {
+            CreateBoundary(polygon);
+        }
+
+        if (mode == ToolMode.DrawProfile)
+        {
+            OpenProfile(polygon);
+        }
     }
 
     private void CreatePlatform(List<Point2> boundary)
@@ -886,7 +1153,14 @@ public partial class MainWindow : Window
         };
         _project.Platforms.Add(p);
         View.SelectedPlatform = p;
-        foreach (TabItem t in RightPanel.Items) if ((string)t.Header == "Вертикално планиране") RightPanel.SelectedItem = t;
+        foreach (TabItem t in RightPanel.Items)
+        {
+            if ((string)t.Header == "Вертикално планиране")
+            {
+                RightPanel.SelectedItem = t;
+            }
+        }
+
         DataChanged();
         Info(string.Create(
             CultureInfo.InvariantCulture,
@@ -917,7 +1191,12 @@ public partial class MainWindow : Window
             return;
         }
 
-        if (View.CutFill != null) { View.CutFill = null; View.RebuildScene(); } // картограмата вече не е актуална
+        if (View.CutFill != null)
+        {
+            View.CutFill = null;
+            View.RebuildScene();
+        } // картограмата вече не е актуална
+
         ScheduleDesignRegeneration();
         LoadPlatformFields();
         View.InvalidateVisual();
@@ -928,7 +1207,11 @@ public partial class MainWindow : Window
     // =====================================================================
     private void SurfaceList_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
-        if (_updatingUi) return;
+        if (_updatingUi)
+        {
+            return;
+        }
+
         _active = SurfaceList.SelectedItem as Surface;
         RefreshAll();
     }
@@ -936,7 +1219,10 @@ public partial class MainWindow : Window
     // ---------- видимост на повърхнините ----------
     private void SurfaceVisible_Click(object sender, RoutedEventArgs e)
     {
-        if (sender is not CheckBox { DataContext: Surface s }) return;
+        if (sender is not CheckBox { DataContext: Surface s })
+        {
+            return;
+        }
 
         // привързването вече е сменило свойството – за „Отмени“ записваме състоянието отпреди щракването
         bool now = s.IsVisible;
@@ -945,7 +1231,9 @@ public partial class MainWindow : Window
         s.IsVisible = now;
         RefreshAll();
         if (ReferenceEquals(s, _active) && !s.IsVisible)
+        {
             Info($"Активната повърхнина „{s.Name}“ е скрита – инструментите за редакция продължават да работят върху нея.");
+        }
     }
 
     private void ShowAllSurfaces_Click(object sender, RoutedEventArgs e) =>
@@ -957,15 +1245,28 @@ public partial class MainWindow : Window
     /// <summary>Сменя видимостта на повърхнините като една стъпка за „Отмени“ (само ако нещо се променя).</summary>
     private void SetVisibility(Func<Surface, bool> visible)
     {
-        if (_project.Surfaces.All(s => s.IsVisible == visible(s))) return;
+        if (_project.Surfaces.All(s => s.IsVisible == visible(s)))
+        {
+            return;
+        }
+
         PushUndo();
-        foreach (var s in _project.Surfaces) s.IsVisible = visible(s);
+        foreach (var s in _project.Surfaces)
+        {
+            s.IsVisible = visible(s);
+        }
+
         RefreshAll();
     }
 
     private void IsDesignBox_Click(object sender, RoutedEventArgs e)
     {
-        if (_active == null) { IsDesignBox.IsChecked = false; return; }
+        if (_active == null)
+        {
+            IsDesignBox.IsChecked = false;
+            return;
+        }
+
         PushUndo();
         _active.IsDesign = IsDesignBox.IsChecked == true;
         DataChanged(false);
@@ -982,7 +1283,13 @@ public partial class MainWindow : Window
                 $"Терен: „{gs.ExistingSurfaceName}“, стъпка {gs.GridStep:0.##} m, {(gs.ZoneOnly ? "само зоната на планирането" : "пълно копие на терена")}")
             : "Свържете повърхнината с терена и платформите, за да се обновява автоматично";
         IsDesignBox.IsChecked = _active?.IsDesign == true;
-        if (_active == null) { StatsText.Text = "Няма активна повърхнина."; MaxEdgeBox.Text = "0"; return; }
+        if (_active == null)
+        {
+            StatsText.Text = "Няма активна повърхнина.";
+            MaxEdgeBox.Text = "0";
+            return;
+        }
+
         var s = _active.GetStatistics();
         var ci = CultureInfo.InvariantCulture;
         string failed = _active.FailedBreaklineSegments > 0 ? $"  (⚠ невмъкнати отсечки: {_active.FailedBreaklineSegments})" : "";
@@ -1010,7 +1317,11 @@ public partial class MainWindow : Window
     // ---------- завъртане на ребра ----------
     private void OnSwapEdge(int a, int b)
     {
-        if (_active == null) return;
+        if (_active == null)
+        {
+            return;
+        }
+
         if (!_active.CanSwapEdge(a, b, out _, out _, out var reason))
         {
             Info(reason ?? "Реброто не може да се завърти.");
@@ -1027,7 +1338,12 @@ public partial class MainWindow : Window
 
     private void RemoveFailedSwaps_Click(object sender, RoutedEventArgs e)
     {
-        if (_active == null || _active.FailedEdgeSwaps == 0) { Info("Няма неприложени завъртания."); return; }
+        if (_active == null || _active.FailedEdgeSwaps == 0)
+        {
+            Info("Няма неприложени завъртания.");
+            return;
+        }
+
         PushUndo();
         int n = _active.RemoveFailedEdgeSwaps();
         DataChanged();
@@ -1036,7 +1352,11 @@ public partial class MainWindow : Window
 
     private void ClearSwaps_Click(object sender, RoutedEventArgs e)
     {
-        if (_active == null || _active.EdgeSwaps.Count == 0) return;
+        if (_active == null || _active.EdgeSwaps.Count == 0)
+        {
+            return;
+        }
+
         PushUndo();
         _active.SetEdgeSwaps(Array.Empty<EdgeSwap>());
         DataChanged();
@@ -1046,7 +1366,11 @@ public partial class MainWindow : Window
     private void NewSurface_Click(object sender, RoutedEventArgs e)
     {
         var name = InputDialog.AskText(this, "Нова повърхнина", "Име:", _project.UniqueSurfaceName("Повърхнина"));
-        if (string.IsNullOrWhiteSpace(name)) return;
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            return;
+        }
+
         PushUndo();
         _active = new Surface(_project.UniqueSurfaceName(name.Trim()));
         _project.Surfaces.Add(_active);
@@ -1057,7 +1381,11 @@ public partial class MainWindow : Window
 
     private void DuplicateSurface_Click(object sender, RoutedEventArgs e)
     {
-        if (!RequireActive()) return;
+        if (!RequireActive())
+        {
+            return;
+        }
+
         PushUndo();
         _active = _active!.Clone(_project.UniqueSurfaceName(_active.Name + " – копие"));
         _project.Surfaces.Add(_active);
@@ -1066,33 +1394,71 @@ public partial class MainWindow : Window
 
     private void RenameSurface_Click(object sender, RoutedEventArgs e)
     {
-        if (!RequireActive()) return;
+        if (!RequireActive())
+        {
+            return;
+        }
+
         var name = InputDialog.AskText(this, "Преименуване", "Ново име:", _active!.Name)?.Trim();
-        if (string.IsNullOrEmpty(name) || name == _active.Name) return;
-        if (_project.FindSurface(name) != null) { Warn("Вече има повърхнина с това име."); return; }
+        if (string.IsNullOrEmpty(name) || name == _active.Name)
+        {
+            return;
+        }
+
+        if (_project.FindSurface(name) != null)
+        {
+            Warn("Вече има повърхнина с това име.");
+            return;
+        }
+
         PushUndo();
-        if (_project.ExistingSurfaceName == _active.Name) _project.ExistingSurfaceName = name;
+        if (_project.ExistingSurfaceName == _active.Name)
+        {
+            _project.ExistingSurfaceName = name;
+        }
+
         foreach (var d in _project.Surfaces)
-            if (d.GradingSource is { } link && link.ExistingSurfaceName == _active.Name) link.ExistingSurfaceName = name;
+        {
+            if (d.GradingSource is { } link && link.ExistingSurfaceName == _active.Name)
+            {
+                link.ExistingSurfaceName = name;
+            }
+        }
+
         _active.Name = name;
         DataChanged(false);
     }
 
     private void DeleteSurface_Click(object sender, RoutedEventArgs e)
     {
-        if (!RequireActive()) return;
-        if (MessageBox.Show(this, $"Да се изтрие ли „{_active!.Name}“?", "Изтриване", MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes)
+        if (!RequireActive())
+        {
             return;
+        }
+
+        if (MessageBox.Show(this, $"Да се изтрие ли „{_active!.Name}“?", "Изтриване", MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes)
+        {
+            return;
+        }
+
         PushUndo();
         _project.Surfaces.Remove(_active);
-        if (_project.ExistingSurfaceName == _active.Name) _project.ExistingSurfaceName = _project.Surfaces.FirstOrDefault()?.Name;
+        if (_project.ExistingSurfaceName == _active.Name)
+        {
+            _project.ExistingSurfaceName = _project.Surfaces.FirstOrDefault()?.Name;
+        }
+
         _active = null;
         DataChanged();
     }
 
     private void ApplyMaxEdge_Click(object sender, RoutedEventArgs e)
     {
-        if (!RequireActive() || !TryRead(MaxEdgeBox, "Макс. дължина на ребро", out var v, 0)) return;
+        if (!RequireActive() || !TryRead(MaxEdgeBox, "Макс. дължина на ребро", out var v, 0))
+        {
+            return;
+        }
+
         PushUndo();
         _active!.MaxEdgeLength = v;
         DataChanged();
@@ -1103,7 +1469,12 @@ public partial class MainWindow : Window
         View.ShowPoints = ShowPointsBox.IsChecked == true;
         View.ShowTriangles = ShowTrianglesBox.IsChecked == true;
         View.ShowContours = ShowContoursBox.IsChecked == true;
-        if (_contourBoxesSurface != _active) { LoadContourSettings(); _contourBoxesSurface = _active; }
+        if (_contourBoxesSurface != _active)
+        {
+            LoadContourSettings();
+            _contourBoxesSurface = _active;
+        }
+
         View.ShowContourLabels = ContourLabelsBox.IsChecked == true;
         View.ShowBackgroundLabels = BackgroundLabelsBox.IsChecked == true;
         BackgroundLabelsBox.IsEnabled = ContourLabelsBox.IsChecked == true;
@@ -1123,14 +1494,27 @@ public partial class MainWindow : Window
     private void ApplyContourSettings()
     {
         var s = _active;
-        if (s == null) { ContourHint.Visibility = Visibility.Collapsed; return; }
+        if (s == null)
+        {
+            ContourHint.Visibility = Visibility.Collapsed;
+            return;
+        }
+
         bool newInterval = NumberParser.TryParse(ContourIntervalBox.Text, out var ci) && ci > 0 && ci != s.ContourInterval;
         bool newEvery = int.TryParse(MajorEveryBox.Text.Trim(), out var every) && every >= 1 && every != s.MajorContourEvery;
         if (newInterval || newEvery)
         {
             PushUndo(); // една стъпка за „Отмени“ (Ctrl+Z) на промяна
-            if (newInterval) s.ContourInterval = ci;
-            if (newEvery) s.MajorContourEvery = every;
+            if (newInterval)
+            {
+                s.ContourInterval = ci;
+            }
+
+            if (newEvery)
+            {
+                s.MajorContourEvery = every;
+            }
+
             UpdateTitle();
         }
 
@@ -1144,7 +1528,10 @@ public partial class MainWindow : Window
                 $"Стъпка {s.ContourInterval:0.###} m дава над {MaxContourLevels} хоризонтали при денивелация {st.MaxZ - st.MinZ:0.#} m – използва се {used:0.###} m.");
             ContourHint.Visibility = Visibility.Visible;
         }
-        else ContourHint.Visibility = Visibility.Collapsed;
+        else
+        {
+            ContourHint.Visibility = Visibility.Collapsed;
+        }
     }
 
     /// <summary>Показва настройките на активната повърхнина в полетата.</summary>
@@ -1165,7 +1552,10 @@ public partial class MainWindow : Window
 
     private void ContourSetting_Changed(object sender, RoutedEventArgs e)
     {
-        if (!IsLoaded || _updatingUi) return;
+        if (!IsLoaded || _updatingUi)
+        {
+            return;
+        }
 
         // при избор от списъка текстът се обновява след събитието
         Dispatcher.BeginInvoke(
@@ -1179,12 +1569,19 @@ public partial class MainWindow : Window
 
     private void ContourSetting_KeyDown(object sender, KeyEventArgs e)
     {
-        if (e.Key == Key.Enter) ContourSetting_Changed(sender, e);
+        if (e.Key == Key.Enter)
+        {
+            ContourSetting_Changed(sender, e);
+        }
     }
 
     private void ViewOption_Changed(object sender, RoutedEventArgs e)
     {
-        if (!IsLoaded || _updatingUi) return;
+        if (!IsLoaded || _updatingUi)
+        {
+            return;
+        }
+
         var settings = ViewSettingsFromUi();
         if (settings != _project.View)
         {
@@ -1226,13 +1623,20 @@ public partial class MainWindow : Window
 
     private void ApplyOnEnter(object sender, KeyEventArgs e)
     {
-        if (e.Key == Key.Enter) ViewOption_Changed(sender, e);
+        if (e.Key == Key.Enter)
+        {
+            ViewOption_Changed(sender, e);
+        }
     }
 
     // ---------- редакция ----------
     private void RaiseLower_Click(object sender, RoutedEventArgs e)
     {
-        if (!RequireActive() || RequireSelection() is not { } poly || !TryRead(DeltaZBox, "Δh", out var dz)) return;
+        if (!RequireActive() || RequireSelection() is not { } poly || !TryRead(DeltaZBox, "Δh", out var dz))
+        {
+            return;
+        }
+
         PushUndo();
         int n = SurfaceEditor.RaiseLower(_active!, poly, dz);
         DataChanged();
@@ -1241,7 +1645,11 @@ public partial class MainWindow : Window
 
     private void Flatten_Click(object sender, RoutedEventArgs e)
     {
-        if (!RequireActive() || RequireSelection() is not { } poly || !TryRead(FlattenZBox, "Кота", out var z)) return;
+        if (!RequireActive() || RequireSelection() is not { } poly || !TryRead(FlattenZBox, "Кота", out var z))
+        {
+            return;
+        }
+
         PushUndo();
         int n = SurfaceEditor.Flatten(_active!, poly, z);
         DataChanged();
@@ -1250,7 +1658,11 @@ public partial class MainWindow : Window
 
     private void Smooth_Click(object sender, RoutedEventArgs e)
     {
-        if (!RequireActive() || !TryRead(SmoothBox, "Итерации", out var it, 1, 100)) return;
+        if (!RequireActive() || !TryRead(SmoothBox, "Итерации", out var it, 1, 100))
+        {
+            return;
+        }
+
         PushUndo();
         Polygon2? region = _selection is { Count: >= 3 } ? new Polygon2(_selection) : null;
         int n = SurfaceEditor.Smooth(_active!, (int)it, 0.5, region);
@@ -1260,9 +1672,18 @@ public partial class MainWindow : Window
 
     private void Resample_Click(object sender, RoutedEventArgs e)
     {
-        if (!RequireActive() || !TryRead(ResampleBox, "Стъпка", out var step, 0.01)) return;
+        if (!RequireActive() || !TryRead(ResampleBox, "Стъпка", out var step, 0.01))
+        {
+            return;
+        }
+
         var b = _active!.Bounds;
-        if (b.Width / step * (b.Height / step) > 2_000_000) { Warn("Твърде малка стъпка за тази площ."); return; }
+        if (b.Width / step * (b.Height / step) > 2_000_000)
+        {
+            Warn("Твърде малка стъпка за тази площ.");
+            return;
+        }
+
         PushUndo();
         var s = SurfaceEditor.ResampleToGrid(
             _active,
@@ -1275,7 +1696,11 @@ public partial class MainWindow : Window
 
     private void DeleteInside_Click(object sender, RoutedEventArgs e)
     {
-        if (!RequireActive() || RequireSelection() is not { } poly) return;
+        if (!RequireActive() || RequireSelection() is not { } poly)
+        {
+            return;
+        }
+
         PushUndo();
         int n = SurfaceEditor.DeleteInside(_active!, poly);
         DataChanged();
@@ -1284,7 +1709,11 @@ public partial class MainWindow : Window
 
     private void DeleteOutside_Click(object sender, RoutedEventArgs e)
     {
-        if (!RequireActive() || RequireSelection() is not { } poly) return;
+        if (!RequireActive() || RequireSelection() is not { } poly)
+        {
+            return;
+        }
+
         PushUndo();
         int n = SurfaceEditor.DeleteOutside(_active!, poly);
         DataChanged();
@@ -1304,7 +1733,11 @@ public partial class MainWindow : Window
     // ---------- структурни линии ----------
     private Surface EnsureActiveSurface()
     {
-        if (_active != null) return _active;
+        if (_active != null)
+        {
+            return _active;
+        }
+
         _active = new Surface(_project.UniqueSurfaceName("Повърхнина"));
         _project.Surfaces.Add(_active);
         _project.ExistingSurfaceName ??= _active.Name;
@@ -1332,14 +1765,22 @@ public partial class MainWindow : Window
             "Структурна линия",
             MessageBoxButton.YesNoCancel,
             MessageBoxImage.Question);
-        if (ask == MessageBoxResult.Cancel) return;
+        if (ask == MessageBoxResult.Cancel)
+        {
+            return;
+        }
 
         var pts = new List<Point3>();
         double last = 0;
         for (int i = 0; i < vertices.Count; i++)
         {
             var v = vertices[i];
-            if (closed && i == vertices.Count - 1) { pts.Add(pts[0]); break; }
+            if (closed && i == vertices.Count - 1)
+            {
+                pts.Add(pts[0]);
+                break;
+            }
+
             double? z = surface?.ElevationAt(v.X, v.Y);
             if (ask == MessageBoxResult.No || z == null)
             {
@@ -1348,7 +1789,10 @@ public partial class MainWindow : Window
                     "Структурна линия",
                     string.Create(CultureInfo.InvariantCulture, $"Кота на връх {i + 1} от {vertices.Count} (X = {v.X:F3}, Y = {v.Y:F3}):"),
                     Math.Round(z ?? last, 3));
-                if (z == null) return;
+                if (z == null)
+                {
+                    return;
+                }
             }
 
             last = z.Value;
@@ -1369,16 +1813,28 @@ public partial class MainWindow : Window
 
     private void BreaklineList_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
-        if (_updatingUi) return;
+        if (_updatingUi)
+        {
+            return;
+        }
+
         View.SelectedBreakline = SelectedBreakline;
         View.InvalidateVisual();
     }
 
     private void BreaklineList_DoubleClick(object sender, MouseButtonEventArgs e)
     {
-        if (_active == null || SelectedBreakline is not { } b) return;
+        if (_active == null || SelectedBreakline is not { } b)
+        {
+            return;
+        }
+
         var name = InputDialog.AskText(this, "Структурна линия", "Име:", b.Name)?.Trim();
-        if (string.IsNullOrEmpty(name) || name == b.Name) return;
+        if (string.IsNullOrEmpty(name) || name == b.Name)
+        {
+            return;
+        }
+
         PushUndo();
         var renamed = b.WithName(name);
         _active.SetBreakline(_active.Breaklines.ToList().IndexOf(b), renamed);
@@ -1394,7 +1850,11 @@ public partial class MainWindow : Window
         {
             Filter = "Текстови файлове (*.txt;*.csv;*.xyz;*.dat)|*.txt;*.csv;*.xyz;*.dat|Всички файлове (*.*)|*.*",
         };
-        if (dlg.ShowDialog(this) != true) return;
+        if (dlg.ShowDialog(this) != true)
+        {
+            return;
+        }
+
         var geo = MessageBox.Show(
             this,
             "Файлът в геодезическа координатна система ли е (X – север, Y – изток)?\n\n" +
@@ -1402,16 +1862,27 @@ public partial class MainWindow : Window
             "Импорт на структурни линии",
             MessageBoxButton.YesNoCancel,
             MessageBoxImage.Question);
-        if (geo == MessageBoxResult.Cancel) return;
+        if (geo == MessageBoxResult.Cancel)
+        {
+            return;
+        }
 
         var lines = PointFileReader.ReadPolylines(dlg.FileName, geo == MessageBoxResult.Yes);
-        if (lines.Count == 0) { Warn("Не са намерени линии с поне 2 върха."); return; }
+        if (lines.Count == 0)
+        {
+            Warn("Не са намерени линии с поне 2 върха.");
+            return;
+        }
 
         PushUndo();
         var s = EnsureActiveSurface();
         string baseName = Path.GetFileNameWithoutExtension(dlg.FileName);
         int k = 1;
-        foreach (var l in lines) s.AddBreakline(new Breakline($"{baseName} {k++}", l));
+        foreach (var l in lines)
+        {
+            s.AddBreakline(new Breakline($"{baseName} {k++}", l));
+        }
+
         DataChanged();
         ReportBreaklineResult();
         Info($"Импортирани {lines.Count} структурни линии в „{s.Name}“.");
@@ -1419,7 +1890,12 @@ public partial class MainWindow : Window
 
     private void EditBreakline_Click(object sender, RoutedEventArgs e)
     {
-        if (_active == null || SelectedBreakline is not { } b) { Warn("Изберете структурна линия от списъка."); return; }
+        if (_active == null || SelectedBreakline is not { } b)
+        {
+            Warn("Изберете структурна линия от списъка.");
+            return;
+        }
+
         var ci = CultureInfo.InvariantCulture;
         var text = string.Join(Environment.NewLine, b.Vertices.Select(v => string.Create(ci, $"{v.X:F3} {v.Y:F3} {v.Z:F3}")));
         var result = InputDialog.AskMultiline(
@@ -1427,10 +1903,18 @@ public partial class MainWindow : Window
             $"Върхове на „{b.Name}“",
             "Един връх на ред: X Y Z (затворена линия – последният връх = първия):",
             text);
-        if (result == null) return;
+        if (result == null)
+        {
+            return;
+        }
 
         var pts = PointFileReader.Parse(result.Split('\n'));
-        if (pts.Count < 2) { Warn("Нужни са поне 2 върха."); return; }
+        if (pts.Count < 2)
+        {
+            Warn("Нужни са поне 2 върха.");
+            return;
+        }
+
         PushUndo();
         var updated = new Breakline(b.Name, pts);
         _active.SetBreakline(_active.Breaklines.ToList().IndexOf(b), updated);
@@ -1441,7 +1925,12 @@ public partial class MainWindow : Window
 
     private void DeleteBreakline_Click(object sender, RoutedEventArgs e)
     {
-        if (_active == null || SelectedBreakline is not { } b) { Warn("Изберете структурна линия от списъка."); return; }
+        if (_active == null || SelectedBreakline is not { } b)
+        {
+            Warn("Изберете структурна линия от списъка.");
+            return;
+        }
+
         PushUndo();
         _active.RemoveBreaklineAt(_active.Breaklines.ToList().IndexOf(b));
         View.SelectedBreakline = null;
@@ -1450,13 +1939,21 @@ public partial class MainWindow : Window
 
     private void DeleteAllBreaklines_Click(object sender, RoutedEventArgs e)
     {
-        if (_active == null || _active.Breaklines.Count == 0) return;
+        if (_active == null || _active.Breaklines.Count == 0)
+        {
+            return;
+        }
+
         if (MessageBox.Show(
             this,
             $"Да се изтрият ли всички {_active.Breaklines.Count} структурни линии на „{_active.Name}“?",
             "Изтриване",
             MessageBoxButton.YesNo,
-            MessageBoxImage.Question) != MessageBoxResult.Yes) return;
+            MessageBoxImage.Question) != MessageBoxResult.Yes)
+        {
+            return;
+        }
+
         PushUndo();
         _active.SetBreaklines(Array.Empty<Breakline>());
         View.SelectedBreakline = null;
@@ -1475,10 +1972,19 @@ public partial class MainWindow : Window
 
     private void CreateBoundary(List<Point2> polygon)
     {
-        if (_active == null) { Warn("Няма активна повърхнина."); return; }
+        if (_active == null)
+        {
+            Warn("Няма активна повърхнина.");
+            return;
+        }
+
         int defaultType = _active.Boundaries.Any(b => b.Type == BoundaryType.Outer) ? 1 : 0;
         var choice = InputDialog.AskChoice(this, "Граница на повърхнина", "Тип на границата:", BoundaryTypeOptions, defaultType);
-        if (choice == null) return;
+        if (choice == null)
+        {
+            return;
+        }
+
         var type = (BoundaryType)choice.Value;
         string typeName = SurfaceBoundary.TypeName(type);
 
@@ -1494,7 +2000,11 @@ public partial class MainWindow : Window
 
     private void BoundaryList_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
-        if (_updatingUi) return;
+        if (_updatingUi)
+        {
+            return;
+        }
+
         View.SelectedBoundary = SelectedBoundary;
         View.InvalidateVisual();
     }
@@ -1509,9 +2019,17 @@ public partial class MainWindow : Window
 
     private void BoundaryList_DoubleClick(object sender, MouseButtonEventArgs e)
     {
-        if (_active == null || SelectedBoundary is not { } b) return;
+        if (_active == null || SelectedBoundary is not { } b)
+        {
+            return;
+        }
+
         var name = InputDialog.AskText(this, "Граница", "Име:", b.Name)?.Trim();
-        if (string.IsNullOrEmpty(name) || name == b.Name) return;
+        if (string.IsNullOrEmpty(name) || name == b.Name)
+        {
+            return;
+        }
+
         ReplaceBoundary(b, b.With(name: name));
     }
 
@@ -1519,10 +2037,18 @@ public partial class MainWindow : Window
 
     private void BoundaryFromHull_Click(object sender, RoutedEventArgs e)
     {
-        if (!RequireActive()) return;
+        if (!RequireActive())
+        {
+            return;
+        }
+
         var pts = _active!.Points.Select(p => p.XY)
             .Concat(_active.Breaklines.SelectMany(b => b.Vertices.Select(v => v.XY))).ToList();
-        if (pts.Count < 3) { Warn("Нужни са поне 3 точки."); return; }
+        if (pts.Count < 3)
+        {
+            Warn("Нужни са поне 3 точки.");
+            return;
+        }
 
         double suggested = Math.Round(DataHull.SuggestMaxEdge(pts), 1);
         var max = InputDialog.AskNumber(
@@ -1532,10 +2058,18 @@ public partial class MainWindow : Window
             "Външните триъгълници с по-дълги ребра се отрязват (по-малка стойност – по-плътно прилягане).\n" +
             "0 – изпъкнала обвивка. Предложението е 3 × медианата на ребрата:",
             suggested);
-        if (max == null) return;
+        if (max == null)
+        {
+            return;
+        }
 
         var ring = DataHull.Compute(pts, max.Value);
-        if (ring.Count < 3) { Warn("Не може да се построи контур."); return; }
+        if (ring.Count < 3)
+        {
+            Warn("Не може да се построи контур.");
+            return;
+        }
+
         PushUndo();
         var b = new SurfaceBoundary("Контур на данните", BoundaryType.Outer, ring);
         _active.AddBoundary(b);
@@ -1549,7 +2083,12 @@ public partial class MainWindow : Window
     // ---------- профил и разрези ----------
     private void OpenProfile(List<Point2> line)
     {
-        if (_project.Surfaces.All(s => s.TriangleCount == 0)) { Warn("Няма повърхнини с триангулация."); return; }
+        if (_project.Surfaces.All(s => s.TriangleCount == 0))
+        {
+            Warn("Няма повърхнини с триангулация.");
+            return;
+        }
+
         View.ProfileLine = line;
         View.SectionLines = null;
         View.InvalidateVisual();
@@ -1557,11 +2096,24 @@ public partial class MainWindow : Window
         var existing = _project.ExistingSurface?.Name;
         var design = _active != null && _active.Name != existing ? _active.Name : _project.Surfaces.FirstOrDefault(s => s.Name != existing && s.TriangleCount > 0)?.Name;
         var w = new ProfileWindow(() => _project, line, existing, design) { Owner = this };
-        w.MarkerChanged += p => { View.Marker = p; View.InvalidateVisual(); };
-        w.SectionsChanged += (lines, i) => { View.SectionLines = lines; View.CurrentSection = i; View.InvalidateVisual(); };
+        w.MarkerChanged += p =>
+        {
+            View.Marker = p;
+            View.InvalidateVisual();
+        };
+        w.SectionsChanged += (lines, i) =>
+        {
+            View.SectionLines = lines;
+            View.CurrentSection = i;
+            View.InvalidateVisual();
+        };
         w.Closed += (_, _) =>
         {
-            if (ReferenceEquals(View.ProfileLine, line)) View.ProfileLine = null;
+            if (ReferenceEquals(View.ProfileLine, line))
+            {
+                View.ProfileLine = null;
+            }
+
             View.InvalidateVisual();
         };
         w.Show();
@@ -1571,7 +2123,11 @@ public partial class MainWindow : Window
     // ---------- DXF ----------
     private void ExportContoursDxf_Click(object sender, RoutedEventArgs e)
     {
-        if (!RequireActive() || _active!.TriangleCount == 0) return;
+        if (!RequireActive() || _active!.TriangleCount == 0)
+        {
+            return;
+        }
+
         double interval = _active.EffectiveContourInterval(MaxContourLevels);
         int every = _active.MajorContourEvery;
         var h = InputDialog.AskNumber(
@@ -1581,16 +2137,28 @@ public partial class MainWindow : Window
                 CultureInfo.InvariantCulture,
                 $"Хоризонтали през {interval:0.###} m (всяка {every}-а е главна) – от „Изглед“.\nВисочина на надписите на котите, m (0 – без надписи):"),
             Math.Max(Math.Round(interval * 2, 1), 0.5));
-        if (h == null) return;
+        if (h == null)
+        {
+            return;
+        }
+
         var tri = MessageBox.Show(
             this,
             "Да се включат ли и триъгълниците (ребрата на TIN като 3D линии на отделен слой)?",
             "Хоризонтали в DXF",
             MessageBoxButton.YesNoCancel,
             MessageBoxImage.Question);
-        if (tri == MessageBoxResult.Cancel) return;
+        if (tri == MessageBoxResult.Cancel)
+        {
+            return;
+        }
+
         var dlg = new SaveFileDialog { Filter = "DXF (*.dxf)|*.dxf", FileName = $"{_active.Name} - horizontali.dxf" };
-        if (dlg.ShowDialog(this) != true) return;
+        if (dlg.ShowDialog(this) != true)
+        {
+            return;
+        }
+
         int n = DxfWriter.WriteContours(
             dlg.FileName,
             _active,
@@ -1605,16 +2173,28 @@ public partial class MainWindow : Window
 
     private void ExportTinDxf_Click(object sender, RoutedEventArgs e)
     {
-        if (!RequireActive() || _active!.TriangleCount == 0) return;
+        if (!RequireActive() || _active!.TriangleCount == 0)
+        {
+            return;
+        }
+
         var dlg = new SaveFileDialog { Filter = "DXF (*.dxf)|*.dxf", FileName = $"{_active.Name} - TIN.dxf" };
-        if (dlg.ShowDialog(this) != true) return;
+        if (dlg.ShowDialog(this) != true)
+        {
+            return;
+        }
+
         DxfWriter.WriteTin(dlg.FileName, _active);
         Info($"TIN ({_active.TriangleCount} триъгълника) е записан в {dlg.FileName}");
     }
 
     private void BoundaryFromSelection_Click(object sender, RoutedEventArgs e)
     {
-        if (RequireSelection() == null) return;
+        if (RequireSelection() == null)
+        {
+            return;
+        }
+
         var poly = new List<Point2>(_selection!);
         _selection = null;
         CreateBoundary(poly);
@@ -1622,18 +2202,35 @@ public partial class MainWindow : Window
 
     private void BoundaryType_Click(object sender, RoutedEventArgs e)
     {
-        if (_active == null || SelectedBoundary is not { } b) { Warn("Изберете граница от списъка."); return; }
+        if (_active == null || SelectedBoundary is not { } b)
+        {
+            Warn("Изберете граница от списъка.");
+            return;
+        }
+
         var choice = InputDialog.AskChoice(this, "Граница", $"Тип на „{b.Name}“:", BoundaryTypeOptions, (int)b.Type);
-        if (choice == null || (BoundaryType)choice.Value == b.Type) return;
+        if (choice == null || (BoundaryType)choice.Value == b.Type)
+        {
+            return;
+        }
+
         ReplaceBoundary(b, b.With(type: (BoundaryType)choice.Value));
     }
 
     private void BoundaryUp_Click(object sender, RoutedEventArgs e)
     {
-        if (_active == null || SelectedBoundary is not { } b) return;
+        if (_active == null || SelectedBoundary is not { } b)
+        {
+            return;
+        }
+
         var list = _active.Boundaries.ToList();
         int i = list.IndexOf(b);
-        if (i <= 0) return;
+        if (i <= 0)
+        {
+            return;
+        }
+
         PushUndo();
         (list[i - 1], list[i]) = (list[i], list[i - 1]);
         _active.SetBoundaries(list);
@@ -1642,7 +2239,12 @@ public partial class MainWindow : Window
 
     private void DeleteBoundary_Click(object sender, RoutedEventArgs e)
     {
-        if (_active == null || SelectedBoundary is not { } b) { Warn("Изберете граница от списъка."); return; }
+        if (_active == null || SelectedBoundary is not { } b)
+        {
+            Warn("Изберете граница от списъка.");
+            return;
+        }
+
         PushUndo();
         _active.RemoveBoundaryAt(_active.Boundaries.ToList().IndexOf(b));
         View.SelectedBoundary = null;
@@ -1651,7 +2253,11 @@ public partial class MainWindow : Window
 
     private void ExistingBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
-        if (_updatingUi || ExistingBox.SelectedItem is not Surface s) return;
+        if (_updatingUi || ExistingBox.SelectedItem is not Surface s)
+        {
+            return;
+        }
+
         PushUndo();
         _project.ExistingSurfaceName = s.Name;
         DataChanged();
@@ -1659,7 +2265,11 @@ public partial class MainWindow : Window
 
     private void PlatformList_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
-        if (_updatingUi) return;
+        if (_updatingUi)
+        {
+            return;
+        }
+
         View.SelectedPlatform = SelectedPlatform;
         LoadPlatformFields();
         View.InvalidateVisual();
@@ -1687,14 +2297,21 @@ public partial class MainWindow : Window
                 $"Площ: {poly.Area:F2} m², периметър: {poly.Perimeter:F2} m\n" +
                 $"Кота в т. ({r.X:F2}; {r.Y:F2}); по контура: {zmin:F3} … {zmax:F3}");
         }
-        else PlInfoText.Text = "";
+        else
+        {
+            PlInfoText.Text = "";
+        }
     }
 
     private void NewPlatform_Click(object sender, RoutedEventArgs e) => SetTool(ToolMode.DrawPlatform);
 
     private void PlatformFromSelection_Click(object sender, RoutedEventArgs e)
     {
-        if (RequireSelection() == null) return;
+        if (RequireSelection() == null)
+        {
+            return;
+        }
+
         var b = new List<Point2>(_selection!);
         _selection = null;
         CreatePlatform(b);
@@ -1702,7 +2319,12 @@ public partial class MainWindow : Window
 
     private void DeletePlatform_Click(object sender, RoutedEventArgs e)
     {
-        if (SelectedPlatform is not { } p) { Warn("Изберете платформа."); return; }
+        if (SelectedPlatform is not { } p)
+        {
+            Warn("Изберете платформа.");
+            return;
+        }
+
         PushUndo();
         _project.Platforms.Remove(p);
         View.SelectedPlatform = null;
@@ -1711,13 +2333,20 @@ public partial class MainWindow : Window
 
     private void ApplyPlatform_Click(object sender, RoutedEventArgs e)
     {
-        if (SelectedPlatform is not { } p) return;
+        if (SelectedPlatform is not { } p)
+        {
+            return;
+        }
+
         if (!TryRead(PlElevBox, "Проектна кота", out var z) ||
             !TryRead(PlSlopeXBox, "Наклон по X", out var sx, -100, 100) ||
             !TryRead(PlSlopeYBox, "Наклон по Y", out var sy, -100, 100) ||
             !TryRead(PlCutBox, "Откос в изкоп", out var mc, 0.01, 100) ||
             !TryRead(PlFillBox, "Откос в насип", out var mf, 0.01, 100))
+        {
             return;
+        }
+
         PushUndo();
         p.Name = string.IsNullOrWhiteSpace(PlNameBox.Text) ? p.Name : PlNameBox.Text.Trim();
         p.BaseElevation = z;
@@ -1731,7 +2360,11 @@ public partial class MainWindow : Window
 
     private void PlatformMeanElevation_Click(object sender, RoutedEventArgs e)
     {
-        if (SelectedPlatform is not { } p || _project.ExistingSurface is not { } eg) return;
+        if (SelectedPlatform is not { } p || _project.ExistingSurface is not { } eg)
+        {
+            return;
+        }
+
         PlElevBox.Text = MeanElevation(eg, p.GetPolygon()).ToString("0.000", CultureInfo.InvariantCulture);
     }
 
@@ -1739,14 +2372,28 @@ public partial class MainWindow : Window
     {
         existing = _project.ExistingSurface!;
         cell = 0;
-        if (existing == null || existing.TriangleCount == 0) { Warn("Изберете съществуващ терен с поне 3 точки."); return false; }
-        if (_project.Platforms.Count == 0) { Warn("Няма платформи. Очертайте платформа с „Нова платформа“."); return false; }
+        if (existing == null || existing.TriangleCount == 0)
+        {
+            Warn("Изберете съществуващ терен с поне 3 точки.");
+            return false;
+        }
+
+        if (_project.Platforms.Count == 0)
+        {
+            Warn("Няма платформи. Очертайте платформа с „Нова платформа“.");
+            return false;
+        }
+
         return TryRead(CellBox, "Клетка", out cell, 0.05, 1000);
     }
 
     private async void ComputeVolumes_Click(object sender, RoutedEventArgs e)
     {
-        if (!PrepareGrading(out var eg, out var cell) || !TryRead(SwellBox, "Коеф. на разрохкване", out var k, 0.5, 2)) return;
+        if (!PrepareGrading(out var eg, out var cell) || !TryRead(SwellBox, "Коеф. на разрохкване", out var k, 0.5, 2))
+        {
+            return;
+        }
+
         var platforms = _project.Platforms.Select(p => p.Clone()).ToList();
         await RunBusy("Изчисляване на обемите...", async () =>
         {
@@ -1761,8 +2408,16 @@ public partial class MainWindow : Window
 
     private async void Balance_Click(object sender, RoutedEventArgs e)
     {
-        if (SelectedPlatform is not { } target) { Warn("Изберете платформа за балансиране."); return; }
-        if (!PrepareGrading(out var eg, out var cell) || !TryRead(SwellBox, "Коеф. на разрохкване", out var k, 0.5, 2)) return;
+        if (SelectedPlatform is not { } target)
+        {
+            Warn("Изберете платформа за балансиране.");
+            return;
+        }
+
+        if (!PrepareGrading(out var eg, out var cell) || !TryRead(SwellBox, "Коеф. на разрохкване", out var k, 0.5, 2))
+        {
+            return;
+        }
 
         int idx = _project.Platforms.IndexOf(target);
         var clones = _project.Platforms.Select(p => p.Clone()).ToList();
@@ -1785,7 +2440,11 @@ public partial class MainWindow : Window
 
     private async void BuildDesign_Click(object sender, RoutedEventArgs e)
     {
-        if (!PrepareGrading(out var eg, out _) || !TryRead(DesignStepBox, "Стъпка на проектната TIN", out var step, 0.1, 100)) return;
+        if (!PrepareGrading(out var eg, out _) || !TryRead(DesignStepBox, "Стъпка на проектната TIN", out var step, 0.1, 100))
+        {
+            return;
+        }
+
         var platforms = _project.Platforms.Select(p => p.Clone()).ToList();
         var name = _project.UniqueSurfaceName("Проект");
         bool zoneOnly = ZoneOnlyBox.IsChecked == true;
@@ -1821,7 +2480,11 @@ public partial class MainWindow : Window
             return;
         }
 
-        if (!TryRead(CellBox, "Клетка", out var cell, 0.05, 1000) || !TryRead(SwellBox, "Коеф. на разрохкване", out var k, 0.5, 2)) return;
+        if (!TryRead(CellBox, "Клетка", out var cell, 0.05, 1000) || !TryRead(SwellBox, "Коеф. на разрохкване", out var k, 0.5, 2))
+        {
+            return;
+        }
+
         var design = _active;
         await RunBusy("Изчисляване на обемите между повърхнините...", async () =>
         {

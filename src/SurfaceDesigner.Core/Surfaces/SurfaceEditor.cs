@@ -14,7 +14,11 @@ public static class SurfaceEditor
         int n = 0;
         surface.TransformPoints(p =>
         {
-            if (!region.Contains(p.X, p.Y)) return p;
+            if (!region.Contains(p.X, p.Y))
+            {
+                return p;
+            }
+
             n++;
             return p with { Z = p.Z + dz };
         });
@@ -31,7 +35,11 @@ public static class SurfaceEditor
         int n = 0;
         surface.TransformPoints(p =>
         {
-            if (!region.Contains(p.X, p.Y)) return p;
+            if (!region.Contains(p.X, p.Y))
+            {
+                return p;
+            }
+
             n++;
             return p with { Z = z };
         });
@@ -59,13 +67,17 @@ public static class SurfaceEditor
     private static void TransformBreaklines(Surface surface, Func<Point3, Point3> f)
     {
         if (surface.Breaklines.Count > 0)
+        {
             surface.SetBreaklines(surface.Breaklines.Select(b => b.Transform(f)));
+        }
     }
 
     private static void RemoveBreaklineVertices(Surface surface, Predicate<Point3> remove)
     {
         if (surface.Breaklines.Count > 0)
+        {
             surface.SetBreaklines(surface.Breaklines.SelectMany(b => b.RemoveVertices(remove)));
+        }
     }
 
     /// <summary>
@@ -86,8 +98,17 @@ public static class SurfaceEditor
             var cnt = new int[n];
             foreach (var (a, b) in surface.GetEdges())
             {
-                if (a < n) { sum[a] += verts[b].Z; cnt[a]++; }
-                if (b < n) { sum[b] += verts[a].Z; cnt[b]++; }
+                if (a < n)
+                {
+                    sum[a] += verts[b].Z;
+                    cnt[a]++;
+                }
+
+                if (b < n)
+                {
+                    sum[b] += verts[a].Z;
+                    cnt[b]++;
+                }
             }
 
             var boundary = BoundaryVertices(surface);
@@ -98,7 +119,10 @@ public static class SurfaceEditor
                 var p = pts[i];
                 bool apply = cnt[i] > 0 && !boundary.Contains(i) && (region == null || region.Contains(p.X, p.Y));
                 newZ[i] = apply ? p.Z + factor * (sum[i] / cnt[i] - p.Z) : p.Z;
-                if (apply) affected++;
+                if (apply)
+                {
+                    affected++;
+                }
             }
 
             int idx = 0;
@@ -111,10 +135,17 @@ public static class SurfaceEditor
     /// <summary>Нова повърхнина, получена чрез семплиране в правоъгълна мрежа със стъпка <paramref name="step"/>.</summary>
     public static Surface ResampleToGrid(Surface surface, double step, string name)
     {
-        if (step <= 0) throw new ArgumentOutOfRangeException(nameof(step));
+        if (step <= 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(step));
+        }
+
         var b = surface.Bounds;
         var result = new Surface(name) { MaxEdgeLength = surface.MaxEdgeLength > 0 ? Math.Max(surface.MaxEdgeLength, step * 1.5) : 0 };
-        if (b.IsEmpty) return result;
+        if (b.IsEmpty)
+        {
+            return result;
+        }
 
         double x0 = Math.Floor(b.MinX / step) * step;
         double y0 = Math.Floor(b.MinY / step) * step;
@@ -124,7 +155,10 @@ public static class SurfaceEditor
             for (double x = x0; x <= b.MaxX + 1e-9; x += step)
             {
                 var z = surface.ElevationAt(x, y);
-                if (z.HasValue) list.Add(new Point3(x, y, z.Value));
+                if (z.HasValue)
+                {
+                    list.Add(new Point3(x, y, z.Value));
+                }
             }
         }
 
@@ -153,7 +187,14 @@ public static class SurfaceEditor
 
         var set = new HashSet<int>();
         foreach (var (key, c) in count)
-            if (c == 1) { set.Add(key.Item1); set.Add(key.Item2); }
+        {
+            if (c == 1)
+            {
+                set.Add(key.Item1);
+                set.Add(key.Item2);
+            }
+        }
+
         return set;
     }
 }

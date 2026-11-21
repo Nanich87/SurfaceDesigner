@@ -23,11 +23,18 @@ public sealed class Project
     /// <summary>Уникално име на повърхнина на база на подаденото.</summary>
     public string UniqueSurfaceName(string baseName)
     {
-        if (FindSurface(baseName) == null) return baseName;
+        if (FindSurface(baseName) == null)
+        {
+            return baseName;
+        }
+
         for (int i = 2; ; i++)
         {
             var n = $"{baseName} ({i})";
-            if (FindSurface(n) == null) return n;
+            if (FindSurface(n) == null)
+            {
+                return n;
+            }
         }
     }
 }

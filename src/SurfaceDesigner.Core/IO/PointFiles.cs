@@ -24,7 +24,13 @@ public static class PointFileReader
     {
         var result = new List<Point3>();
         foreach (var raw in lines)
-            if (TryParseLine(raw, geodetic, out var p)) result.Add(p);
+        {
+            if (TryParseLine(raw, geodetic, out var p))
+            {
+                result.Add(p);
+            }
+        }
+
         return result;
     }
 
@@ -47,11 +53,19 @@ public static class PointFileReader
                 continue;
             }
 
-            if (current.Count >= 2) result.Add(current);
+            if (current.Count >= 2)
+            {
+                result.Add(current);
+            }
+
             current = new List<Point3>();
         }
 
-        if (current.Count >= 2) result.Add(current);
+        if (current.Count >= 2)
+        {
+            result.Add(current);
+        }
+
         return result;
     }
 
@@ -59,15 +73,26 @@ public static class PointFileReader
     {
         point = default;
         var line = raw.Trim();
-        if (line.Length == 0 || line.StartsWith('#') || line.StartsWith("//")) return false;
+        if (line.Length == 0 || line.StartsWith('#') || line.StartsWith("//"))
+        {
+            return false;
+        }
 
         string[] tokens = line.Split(Separators, StringSplitOptions.RemoveEmptyEntries);
         if (tokens.Length == 1)
+        {
             tokens = line.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        }
         else
+        {
             tokens = tokens.Select(t => t.Replace(',', '.')).ToArray();
+        }
 
-        if (!TryGetXyz(tokens, out double a, out double b, out double z)) return false;
+        if (!TryGetXyz(tokens, out double a, out double b, out double z))
+        {
+            return false;
+        }
+
         point = geodetic ? new Point3(b, a, z) : new Point3(a, b, z);
         return true;
     }
@@ -76,11 +101,17 @@ public static class PointFileReader
     {
         a = b = z = 0;
         if (t.Length == 3)
+        {
             return P(t[0], out a) && P(t[1], out b) && P(t[2], out z);
+        }
+
         if (t.Length >= 4)
         {
             // Номер X Y Z [код] – номерът може да е и текст
-            if (P(t[1], out a) && P(t[2], out b) && P(t[3], out z)) return true;
+            if (P(t[1], out a) && P(t[2], out b) && P(t[3], out z))
+            {
+                return true;
+            }
 
             // X Y Z код
             return P(t[0], out a) && P(t[1], out b) && P(t[2], out z);

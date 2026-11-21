@@ -9,7 +9,11 @@ public sealed class AutosaveStoreTests : IDisposable
     /// <inheritdoc/>
     public void Dispose()
     {
-        try { Directory.Delete(_dir, recursive: true); } catch (IOException) { }
+        try
+        {
+            Directory.Delete(_dir, recursive: true);
+        }
+        catch (IOException) { }
     }
 
     private static string Json(string name)
@@ -23,7 +27,9 @@ public sealed class AutosaveStoreTests : IDisposable
     public void CopyOfEndedSession_IsOfferedWithOriginalPath()
     {
         using (var crashed = new AutosaveStore(_dir))
+        {
             Assert.True(crashed.Save(Json("Терен"), @"C:\proj\a.sdproj", crashed.Generation));
+        }
 
         // Dispose без Clear = сесията е прекъсната
         using var next = new AutosaveStore(_dir);

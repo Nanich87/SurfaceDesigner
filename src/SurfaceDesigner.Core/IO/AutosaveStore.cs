@@ -62,7 +62,11 @@ public sealed class AutosaveStore : IDisposable
     {
         lock (_sync)
         {
-            if (generation != _generation) return false;
+            if (generation != _generation)
+            {
+                return false;
+            }
+
             ProjectSerializer.WriteAtomic(ProjectFile(SessionId), projectJson, backupPath: null);
             var meta = new Meta { OriginalPath = originalPath, SavedAtUtc = DateTime.UtcNow };
             ProjectSerializer.WriteAtomic(MetaFile(SessionId), JsonSerializer.Serialize(meta), backupPath: null);
@@ -87,7 +91,10 @@ public sealed class AutosaveStore : IDisposable
         foreach (var file in Directory.EnumerateFiles(DirectoryPath, "*" + ProjectExt))
         {
             string id = Path.GetFileNameWithoutExtension(file);
-            if (id == SessionId || IsSessionAlive(id)) continue;
+            if (id == SessionId || IsSessionAlive(id))
+            {
+                continue;
+            }
 
             string? original = null;
             DateTime savedAt = File.GetLastWriteTimeUtc(file);
@@ -114,7 +121,11 @@ public sealed class AutosaveStore : IDisposable
     /// <summary>Изтрива копие от друга (неработеща) сесия.</summary>
     public void Discard(AutosaveEntry entry)
     {
-        if (entry.SessionId == SessionId || IsSessionAlive(entry.SessionId)) return;
+        if (entry.SessionId == SessionId || IsSessionAlive(entry.SessionId))
+        {
+            return;
+        }
+
         DeleteFiles(entry.SessionId);
     }
 
@@ -124,11 +135,18 @@ public sealed class AutosaveStore : IDisposable
     private bool IsSessionAlive(string id)
     {
         string lockFile = Path.Combine(DirectoryPath, id + LockExt);
-        if (!File.Exists(lockFile)) return false;
+        if (!File.Exists(lockFile))
+        {
+            return false;
+        }
+
         try
         {
             // Заключващ файл, който може да се отвори, е останал от прекъснат процес
-            using (new FileStream(lockFile, FileMode.Open, FileAccess.ReadWrite, FileShare.None)) { }
+            using (new FileStream(lockFile, FileMode.Open, FileAccess.ReadWrite, FileShare.None))
+            {
+            }
+
             File.Delete(lockFile);
             return false;
         }
@@ -146,7 +164,12 @@ public sealed class AutosaveStore : IDisposable
     {
         foreach (var f in new[] { ProjectFile(id), MetaFile(id) })
         {
-            try { File.Delete(f); } catch (IOException) { } catch (UnauthorizedAccessException) { }
+            try
+            {
+                File.Delete(f);
+            }
+            catch (IOException) { }
+            catch (UnauthorizedAccessException) { }
         }
     }
 

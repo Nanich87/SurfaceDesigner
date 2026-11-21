@@ -84,7 +84,8 @@ public class EdgeSwapTests
         s.MaxEdgeLength = 0;
         foreach (var (a, b) in s.GetEdges())
         {
-            var va = s.Vertices[a].XY; var vb = s.Vertices[b].XY;
+            var va = s.Vertices[a].XY;
+            var vb = s.Vertices[b].XY;
             bool isReflexEdge = (va == new Point2(5, 2) && vb == new Point2(5, 10)) || (vb == new Point2(5, 2) && va == new Point2(5, 10));
             if (isReflexEdge)
             {
@@ -137,7 +138,10 @@ public class EdgeSwapTests
         for (int i = 0; i < 200 && swapped < 10; i++)
         {
             double x = 50 + rnd.NextDouble() * 80, y = 50 + rnd.NextDouble() * 80;
-            if (s.TryFindEdge(x, y, 100, out a, out b) && s.SwapEdge(a, b, out _)) swapped++;
+            if (s.TryFindEdge(x, y, 100, out a, out b) && s.SwapEdge(a, b, out _))
+            {
+                swapped++;
+            }
         }
 
         Assert.Equal(10, swapped);
@@ -155,7 +159,10 @@ public class EdgeSwapTests
         for (int i = 0; i < 400; i++)
         {
             double x = rnd.NextDouble() * 200, y = rnd.NextDouble() * 200;
-            if (s.TryFindEdge(x, y, 100, out int a, out int b) && s.SwapEdge(a, b, out _)) swapped++;
+            if (s.TryFindEdge(x, y, 100, out int a, out int b) && s.SwapEdge(a, b, out _))
+            {
+                swapped++;
+            }
         }
 
         Assert.True(swapped > 300);
@@ -164,8 +171,11 @@ public class EdgeSwapTests
         var st = s.GetStatistics();
         Assert.Equal(st0.TriangleCount, st.TriangleCount);
         Assert.Equal(st0.Area2D, st.Area2D, 1e-6 * st0.Area2D);
-        var v = s.Vertices; var t = s.Triangles;
+        var v = s.Vertices;
+        var t = s.Triangles;
         for (int k = 0; k < t.Length; k += 3)
+        {
             Assert.True(Math.Abs(Point2.Cross(v[t[k + 1]].XY - v[t[k]].XY, v[t[k + 2]].XY - v[t[k]].XY)) > 1e-12);
+        }
     }
 }

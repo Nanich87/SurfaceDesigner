@@ -21,7 +21,10 @@ internal sealed class InputDialog : Window
         _box = multiline
             ? new TextBox
             {
-                Text = value, AcceptsReturn = true, Height = 320, Width = 420,
+                Text = value,
+                AcceptsReturn = true,
+                Height = 320,
+                Width = 420,
                 FontFamily = new System.Windows.Media.FontFamily("Consolas"),
                 VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
                 HorizontalScrollBarVisibility = ScrollBarVisibility.Auto,
@@ -38,7 +41,14 @@ internal sealed class InputDialog : Window
         panel.Children.Add(buttons);
         Content = panel;
 
-        Loaded += (_, _) => { _box.Focus(); if (!multiline) _box.SelectAll(); };
+        Loaded += (_, _) =>
+        {
+            _box.Focus();
+            if (!multiline)
+            {
+                _box.SelectAll();
+            }
+        };
     }
 
     /// <summary>Избор на една от няколко възможности (радио бутони). Връща индекса или null при отказ.</summary>
@@ -56,7 +66,10 @@ internal sealed class InputDialog : Window
         var panel = new StackPanel { Margin = new Thickness(12), MinWidth = 300 };
         panel.Children.Add(new TextBlock { Text = prompt, Margin = new Thickness(0, 0, 0, 8), TextWrapping = TextWrapping.Wrap, MaxWidth = 420 });
         var radios = options.Select((o, i) => new RadioButton { Content = o, IsChecked = i == selected, Margin = new Thickness(0, 2, 0, 2) }).ToList();
-        foreach (var r in radios) panel.Children.Add(r);
+        foreach (var r in radios)
+        {
+            panel.Children.Add(r);
+        }
 
         var buttons = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right, Margin = new Thickness(0, 10, 0, 0) };
         var ok = new Button { Content = "OK", Width = 80, IsDefault = true, Margin = new Thickness(0, 0, 6, 0) };
@@ -86,8 +99,16 @@ internal sealed class InputDialog : Window
         while (true)
         {
             var text = AskText(owner, title, prompt, value.ToString("0.###"));
-            if (text == null) return null;
-            if (NumberParser.TryParse(text, out var v)) return v;
+            if (text == null)
+            {
+                return null;
+            }
+
+            if (NumberParser.TryParse(text, out var v))
+            {
+                return v;
+            }
+
             MessageBox.Show(owner, "Невалидно число.", title, MessageBoxButton.OK, MessageBoxImage.Warning);
         }
     }

@@ -48,7 +48,11 @@ public static class ProjectSerializer
                 catch (Exception ex) when (ex is IOException or PlatformNotSupportedException or UnauthorizedAccessException)
                 {
                     // Някои файлови системи (напр. мрежови дялове) не поддържат File.Replace
-                    if (backupPath != null) File.Copy(path, backupPath, overwrite: true);
+                    if (backupPath != null)
+                    {
+                        File.Copy(path, backupPath, overwrite: true);
+                    }
+
                     File.Move(tmp, path, overwrite: true);
                 }
             }
@@ -59,7 +63,10 @@ public static class ProjectSerializer
         }
         finally
         {
-            if (File.Exists(tmp)) File.Delete(tmp);
+            if (File.Exists(tmp))
+            {
+                File.Delete(tmp);
+            }
         }
     }
 
@@ -133,7 +140,10 @@ public static class ProjectSerializer
                     b.Pts));
             surface.SetBoundaries(boundaries);
             if (s.Link is { Existing: { } linkEg } link && link.GridStep > 0)
+            {
                 surface.GradingSource = new GradingSource(linkEg, link.GridStep, link.ZoneOnly);
+            }
+
             surface.SetEdgeSwaps((s.EdgeSwaps ?? new()).Where(a => a.Length >= 4)
                 .Select(a => new EdgeSwap(new Point2(a[0], a[1]), new Point2(a[2], a[3]))));
             project.Surfaces.Add(surface);

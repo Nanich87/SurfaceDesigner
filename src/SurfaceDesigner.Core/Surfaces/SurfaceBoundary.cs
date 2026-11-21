@@ -55,16 +55,28 @@ public sealed class SurfaceBoundary
         bool hasOuter = false, inOuter = false;
         foreach (var b in boundaries)
         {
-            if (b.Type != BoundaryType.Outer) continue;
+            if (b.Type != BoundaryType.Outer)
+            {
+                continue;
+            }
+
             hasOuter = true;
-            if (b.Polygon.Contains(x, y)) { inOuter = true; break; }
+            if (b.Polygon.Contains(x, y))
+            {
+                inOuter = true;
+                break;
+            }
         }
 
         bool outerOk = !hasOuter || inOuter;
         bool visible = outerOk;
         foreach (var b in boundaries)
         {
-            if (b.Type == BoundaryType.Outer || !b.Polygon.Contains(x, y)) continue;
+            if (b.Type == BoundaryType.Outer || !b.Polygon.Contains(x, y))
+            {
+                continue;
+            }
+
             visible = b.Type == BoundaryType.Show && outerOk;
         }
 

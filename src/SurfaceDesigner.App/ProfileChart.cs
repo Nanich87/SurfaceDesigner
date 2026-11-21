@@ -79,9 +79,14 @@ public sealed class ProfileChart : FrameworkElement
         _sMax = Series.SelectMany(s => s.Points).Max(p => p.Station);
         _zMin = all.Min(p => p.Z!.Value);
         _zMax = all.Max(p => p.Z!.Value);
-        if (_sMax - _sMin < 1e-9) _sMax = _sMin + 1;
+        if (_sMax - _sMin < 1e-9)
+        {
+            _sMax = _sMin + 1;
+        }
+
         double zPad = Math.Max((_zMax - _zMin) * 0.08, 0.1);
-        _zMin -= zPad; _zMax += zPad;
+        _zMin -= zPad;
+        _zMax += zPad;
 
         double w = Math.Max(rect.Width - MarginLeft - MarginRight, 10);
         double h = Math.Max(rect.Height - MarginTop - MarginBottom, 10);
@@ -92,14 +97,19 @@ public sealed class ProfileChart : FrameworkElement
             // фиксирано преувеличение – центрираме вертикално
             _ky = _kx * ve;
             double zc = (_zMin + _zMax) / 2, half = h / _ky / 2;
-            _zMin = zc - half; _zMax = zc + half;
+            _zMin = zc - half;
+            _zMax = zc + half;
         }
 
         var plot = new Rect(MarginLeft, MarginTop, w, h);
         DrawGrid(drawingContext, plot);
         drawingContext.PushClip(new RectangleGeometry(plot));
         DrawCutFill(drawingContext);
-        foreach (var s in Series) DrawSeries(drawingContext, s);
+        foreach (var s in Series)
+        {
+            DrawSeries(drawingContext, s);
+        }
+
         drawingContext.Pop();
         drawingContext.DrawRectangle(null, new Pen(AxisBrush, 1), plot);
         DrawLegend(drawingContext, plot);
@@ -117,7 +127,13 @@ public sealed class ProfileChart : FrameworkElement
         double raw = range / Math.Max(target, 1);
         double pow = Math.Pow(10, Math.Floor(Math.Log10(raw)));
         foreach (double k in new[] { 1, 2, 2.5, 5, 10 })
-            if (k * pow >= raw) return k * pow;
+        {
+            if (k * pow >= raw)
+            {
+                return k * pow;
+            }
+        }
+
         return 10 * pow;
     }
 
@@ -151,10 +167,22 @@ public sealed class ProfileChart : FrameworkElement
             bool open = false;
             foreach (var p in s.Points)
             {
-                if (p.Z is not double z) { open = false; continue; }
+                if (p.Z is not double z)
+                {
+                    open = false;
+                    continue;
+                }
+
                 var pt = new Point(X(p.Station), Y(z));
-                if (!open) { ctx.BeginFigure(pt, false, false); open = true; }
-                else ctx.LineTo(pt, true, true);
+                if (!open)
+                {
+                    ctx.BeginFigure(pt, false, false);
+                    open = true;
+                }
+                else
+                {
+                    ctx.LineTo(pt, true, true);
+                }
             }
         }
 
@@ -164,7 +192,11 @@ public sealed class ProfileChart : FrameworkElement
 
     private void DrawCutFill(DrawingContext dc)
     {
-        if (ExistingIndex < 0 || DesignIndex < 0 || ExistingIndex >= Series.Count || DesignIndex >= Series.Count) return;
+        if (ExistingIndex < 0 || DesignIndex < 0 || ExistingIndex >= Series.Count || DesignIndex >= Series.Count)
+        {
+            return;
+        }
+
         var eg = Series[ExistingIndex].Points;
         var de = Series[DesignIndex].Points;
 
@@ -195,13 +227,25 @@ public sealed class ProfileChart : FrameworkElement
         for (int i = 1; i < stations.Count; i++)
         {
             double s0 = stations[i - 1], s1 = stations[i];
-            if (ProfileSampler.ElevationAtStation(eg, (s0 + s1) / 2) is null || ProfileSampler.ElevationAtStation(de, (s0 + s1) / 2) is null) continue;
-            var e0 = ProfileSampler.ElevationAtStation(eg, s0); var e1 = ProfileSampler.ElevationAtStation(eg, s1);
-            var d0 = ProfileSampler.ElevationAtStation(de, s0); var d1 = ProfileSampler.ElevationAtStation(de, s1);
-            if (e0 is null || e1 is null || d0 is null || d1 is null) continue;
+            if (ProfileSampler.ElevationAtStation(eg, (s0 + s1) / 2) is null || ProfileSampler.ElevationAtStation(de, (s0 + s1) / 2) is null)
+            {
+                continue;
+            }
+
+            var e0 = ProfileSampler.ElevationAtStation(eg, s0);
+            var e1 = ProfileSampler.ElevationAtStation(eg, s1);
+            var d0 = ProfileSampler.ElevationAtStation(de, s0);
+            var d1 = ProfileSampler.ElevationAtStation(de, s1);
+            if (e0 is null || e1 is null || d0 is null || d1 is null)
+            {
+                continue;
+            }
+
             double h0 = d0.Value - e0.Value, h1 = d1.Value - e1.Value;
             if (h0 * h1 >= 0)
+            {
                 Quad(s0, e0.Value, d0.Value, s1, e1.Value, d1.Value, h0 + h1 > 0);
+            }
             else
             {
                 double sx = s0 + (s1 - s0) * h0 / (h0 - h1);
@@ -233,7 +277,11 @@ public sealed class ProfileChart : FrameworkElement
 
     private void DrawHover(DrawingContext dc, Rect plot)
     {
-        if (_hoverS is not double s || s < _sMin || s > _sMax) return;
+        if (_hoverS is not double s || s < _sMin || s > _sMax)
+        {
+            return;
+        }
+
         double x = X(s);
         dc.DrawLine(new Pen(AxisBrush, 1) { DashStyle = DashStyles.Dash }, new Point(x, plot.Top), new Point(x, plot.Bottom));
         var lines = new List<string> { XFormat(s) };
@@ -241,14 +289,27 @@ public sealed class ProfileChart : FrameworkElement
         for (int i = 0; i < Series.Count; i++)
         {
             var z = ProfileSampler.ElevationAtStation(Series[i].Points, s);
-            if (i == ExistingIndex) ze = z;
-            if (i == DesignIndex) zd = z;
+            if (i == ExistingIndex)
+            {
+                ze = z;
+            }
+
+            if (i == DesignIndex)
+            {
+                zd = z;
+            }
+
             lines.Add($"{Series[i].Name}: {(z.HasValue ? z.Value.ToString("0.000", CultureInfo.InvariantCulture) : "—")}");
-            if (z.HasValue) dc.DrawEllipse(ColorRamp.Brush(Series[i].Color), null, new Point(x, Y(z.Value)), 3.5, 3.5);
+            if (z.HasValue)
+            {
+                dc.DrawEllipse(ColorRamp.Brush(Series[i].Color), null, new Point(x, Y(z.Value)), 3.5, 3.5);
+            }
         }
 
         if (ze.HasValue && zd.HasValue)
+        {
             lines.Add($"h = {(zd.Value - ze.Value).ToString("+0.000;-0.000;0.000", CultureInfo.InvariantCulture)}");
+        }
 
         var ft = Formatted(string.Join("\n", lines), 11);
         double bx = x + 10 + ft.Width > plot.Right ? x - 14 - ft.Width : x + 10;
@@ -279,7 +340,11 @@ public sealed class ProfileChart : FrameworkElement
     protected override void OnMouseMove(MouseEventArgs e)
     {
         base.OnMouseMove(e);
-        if (_kx <= 0) return;
+        if (_kx <= 0)
+        {
+            return;
+        }
+
         var p = e.GetPosition(this);
         double s = SAt(p.X);
         _hoverS = s >= _sMin && s <= _sMax ? s : null;

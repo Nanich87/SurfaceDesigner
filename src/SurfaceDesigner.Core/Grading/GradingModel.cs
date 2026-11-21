@@ -26,7 +26,11 @@ public sealed class GradingModel
             .ToArray();
 
         var b = Bounds2.Empty;
-        foreach (var p in _platforms) b = b.Union(p.InfluenceBounds);
+        foreach (var p in _platforms)
+        {
+            b = b.Union(p.InfluenceBounds);
+        }
+
         InfluenceBounds = b;
     }
 
@@ -44,20 +48,34 @@ public sealed class GradingModel
         foreach (var p in _platforms)
         {
             if (p.Polygon.Bounds.Contains(x, y) && p.Polygon.Contains(x, y))
+            {
                 return p.Plane(x, y);
+            }
         }
 
         var eg = _existing.ElevationAt(x, y);
-        if (eg is null) return null;
+        if (eg is null)
+        {
+            return null;
+        }
+
         double z = eg.Value;
 
         double best = z, bestDev = 0;
         foreach (var p in _platforms)
         {
-            if (!p.InfluenceBounds.Contains(x, y)) continue;
+            if (!p.InfluenceBounds.Contains(x, y))
+            {
+                continue;
+            }
+
             double r = p.SlopeElevation(x, y, z);
             double dev = Math.Abs(r - z);
-            if (dev > bestDev) { bestDev = dev; best = r; }
+            if (dev > bestDev)
+            {
+                bestDev = dev;
+                best = r;
+            }
         }
 
         return best;
@@ -110,8 +128,16 @@ public sealed class GradingModel
             double zq = Plane(q.X, q.Y);
             double zCut = zq + d / _mCut;   // откос в изкоп се издига навън
             double zFill = zq - d / _mFill; // откос в насип се спуска навън
-            if (eg > zCut) return zCut;
-            if (eg < zFill) return zFill;
+            if (eg > zCut)
+            {
+                return zCut;
+            }
+
+            if (eg < zFill)
+            {
+                return zFill;
+            }
+
             return eg;
         }
     }

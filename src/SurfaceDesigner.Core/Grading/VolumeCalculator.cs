@@ -62,17 +62,25 @@ public static class VolumeCalculator
         double cellSize,
         int subdivisions = 3)
     {
-        if (cellSize <= 0) throw new ArgumentOutOfRangeException(nameof(cellSize));
+        if (cellSize <= 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(cellSize));
+        }
+
         subdivisions = Math.Max(1, subdivisions);
         if (region.IsEmpty || region.Width <= 0 || region.Height <= 0)
+        {
             return new VolumeResult(0, 0, 0, 0, 0, new CutFillGrid(0, 0, cellSize, 0, 0));
+        }
 
         double ox = Math.Floor(region.MinX / cellSize) * cellSize;
         double oy = Math.Floor(region.MinY / cellSize) * cellSize;
         int nx = Math.Max(1, (int)Math.Ceiling((region.MaxX - ox) / cellSize));
         int ny = Math.Max(1, (int)Math.Ceiling((region.MaxY - oy) / cellSize));
         if ((long)nx * ny > 25_000_000)
+        {
             throw new InvalidOperationException("Твърде малка клетка за тази площ – увеличете размера на клетката.");
+        }
 
         var grid = new CutFillGrid(ox, oy, cellSize, nx, ny);
         double sub = cellSize / subdivisions;
@@ -94,21 +102,41 @@ public static class VolumeCalculator
                         double x = ox + ix * cellSize + (sx + 0.5) * sub;
                         double y = oy + iy * cellSize + (sy + 0.5) * sub;
                         var z0 = baseSurface(x, y);
-                        if (z0 is null) continue;
+                        if (z0 is null)
+                        {
+                            continue;
+                        }
+
                         var z1 = compareSurface(x, y);
-                        if (z1 is null) continue;
+                        if (z1 is null)
+                        {
+                            continue;
+                        }
+
                         double d = z1.Value - z0.Value;
                         samples++;
                         depthSum += d;
-                        if (d > 0) { fill += d * sampleArea; fillArea[iy] += sampleArea; }
-                        else if (d < 0) { cut -= d * sampleArea; cutArea[iy] += sampleArea; }
+                        if (d > 0)
+                        {
+                            fill += d * sampleArea;
+                            fillArea[iy] += sampleArea;
+                        }
+                        else if (d < 0)
+                        {
+                            cut -= d * sampleArea;
+                            cutArea[iy] += sampleArea;
+                        }
                     }
                 }
 
                 int idx = grid.Index(ix, iy);
                 grid.Cut[idx] = cut;
                 grid.Fill[idx] = fill;
-                if (samples > 0) grid.MeanDepth[idx] = depthSum / samples;
+                if (samples > 0)
+                {
+                    grid.MeanDepth[idx] = depthSum / samples;
+                }
+
                 area[iy] += samples * sampleArea;
             }
         });

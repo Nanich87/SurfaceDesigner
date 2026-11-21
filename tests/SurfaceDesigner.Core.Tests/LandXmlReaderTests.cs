@@ -10,7 +10,8 @@ public class LandXmlReaderTests
     private static HashSet<string> TriangleSet(Surface s)
     {
         static (long, long) K(Point2 p) => ((long)Math.Round(p.X * 1e4), (long)Math.Round(p.Y * 1e4));
-        var v = s.Vertices; var t = s.Triangles;
+        var v = s.Vertices;
+        var t = s.Triangles;
         var set = new HashSet<string>();
         for (int k = 0; k < t.Length; k += 3)
         {
@@ -31,7 +32,10 @@ public class LandXmlReaderTests
             result = LandXmlReader.Read(path);
             return Assert.Single(result.Surfaces);
         }
-        finally { File.Delete(path); }
+        finally
+        {
+            File.Delete(path);
+        }
     }
 
     private static void AssertSameTin(Surface expected, Surface actual)
@@ -48,7 +52,10 @@ public class LandXmlReaderTests
             Assert.Equal(z1.HasValue, z2.HasValue);
 
             // LandXML записва координатите до 0.1 мм – затова допуск 1 мм
-            if (z1.HasValue) Assert.Equal(z1.Value, z2!.Value, 1e-3);
+            if (z1.HasValue)
+            {
+                Assert.Equal(z1.Value, z2!.Value, 1e-3);
+            }
         }
     }
 
@@ -72,7 +79,12 @@ public class LandXmlReaderTests
         // ръчни завъртания на ребра → не-Делоне триангулация
         var rnd = new Random(9);
         for (int i = 0; i < 150; i++)
-            if (s.TryFindEdge(rnd.NextDouble() * 200, rnd.NextDouble() * 200, 100, out int a, out int b)) s.SwapEdge(a, b, out _);
+        {
+            if (s.TryFindEdge(rnd.NextDouble() * 200, rnd.NextDouble() * 200, 100, out int a, out int b))
+            {
+                s.SwapEdge(a, b, out _);
+            }
+        }
 
         // вдлъбнат външен контур, дупка и остров в дупката
         s.AddBoundary(new SurfaceBoundary("O", BoundaryType.Outer, new Point2[] { new(5, 8), new(150, 3), new(196, 90), new(110, 110), new(180, 190), new(10, 185) }));
@@ -106,7 +118,13 @@ public class LandXmlReaderTests
         s.AddBreakline(new Breakline("Площадка", new[] { new Point3(140, 140, 107), new Point3(170, 140, 107), new Point3(170, 170, 107), new Point3(140, 170, 107), new Point3(140, 140, 107) }));
         var rnd = new Random(3);
         for (int i = 0; i < 60; i++)
-            if (s.TryFindEdge(rnd.NextDouble() * 200, rnd.NextDouble() * 200, 100, out int a, out int b)) s.SwapEdge(a, b, out _);
+        {
+            if (s.TryFindEdge(rnd.NextDouble() * 200, rnd.NextDouble() * 200, 100, out int a, out int b))
+            {
+                s.SwapEdge(a, b, out _);
+            }
+        }
+
         s.AddBoundary(new SurfaceBoundary("H", BoundaryType.Hide, new Point2[] { new(30, 30), new(60, 30), new(55, 60) }));
 
         var r = RoundTrip(s, out var res);
@@ -120,7 +138,9 @@ public class LandXmlReaderTests
         for (int i = 0; i < 3; i++)
         {
             foreach (var v in s.Breaklines[i].Vertices)
+            {
                 Assert.Contains(r.Breaklines[i].Vertices, w => Point2.Distance(v.XY, w.XY) < 1e-3);
+            }
         }
 
         Assert.Contains(r.Breaklines[0].Vertices, w => r.Breaklines[1].Vertices.Any(u => Point2.Distance(u.XY, w.XY) < 1e-3)); // общ връх

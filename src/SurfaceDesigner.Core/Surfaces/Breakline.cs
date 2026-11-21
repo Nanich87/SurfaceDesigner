@@ -16,11 +16,19 @@ public sealed class Breakline
         var list = new List<Point3>();
         foreach (var v in vertices)
         {
-            if (list.Count > 0 && Math.Abs(list[^1].X - v.X) < 1e-9 && Math.Abs(list[^1].Y - v.Y) < 1e-9) continue;
+            if (list.Count > 0 && Math.Abs(list[^1].X - v.X) < 1e-9 && Math.Abs(list[^1].Y - v.Y) < 1e-9)
+            {
+                continue;
+            }
+
             list.Add(v);
         }
 
-        if (list.Count < 2) throw new ArgumentException("Структурната линия трябва да има поне 2 различни върха.");
+        if (list.Count < 2)
+        {
+            throw new ArgumentException("Структурната линия трябва да има поне 2 различни върха.");
+        }
+
         Vertices = list;
     }
 
@@ -36,7 +44,11 @@ public sealed class Breakline
         get
         {
             double s = 0;
-            for (int i = 1; i < Vertices.Count; i++) s += Point2.Distance(Vertices[i - 1].XY, Vertices[i].XY);
+            for (int i = 1; i < Vertices.Count; i++)
+            {
+                s += Point2.Distance(Vertices[i - 1].XY, Vertices[i].XY);
+            }
+
             return s;
         }
     }
@@ -55,13 +67,23 @@ public sealed class Breakline
         {
             if (remove(v))
             {
-                if (run.Count >= 2) yield return new Breakline(Name, run);
+                if (run.Count >= 2)
+                {
+                    yield return new Breakline(Name, run);
+                }
+
                 run = new List<Point3>();
             }
-            else run.Add(v);
+            else
+            {
+                run.Add(v);
+            }
         }
 
-        if (run.Count >= 2) yield return new Breakline(Name, run);
+        if (run.Count >= 2)
+        {
+            yield return new Breakline(Name, run);
+        }
     }
 
     /// <summary>Кота в точка от линията, зададена с хоризонтално разстояние от началото (по права между върховете).</summary>
@@ -114,7 +136,10 @@ internal static class BreaklineSplitter
         for (int l = 0; l < lines.Count; l++)
         {
             var v = lines[l].Vertices;
-            for (int i = 1; i < v.Count; i++) segs.Add(new Seg(l, i - 1, v[i - 1], v[i]));
+            for (int i = 1; i < v.Count; i++)
+            {
+                segs.Add(new Seg(l, i - 1, v[i - 1], v[i]));
+            }
         }
 
         var inserts = new Dictionary<(int, int), List<(double T, Point3 P)>>();
@@ -126,18 +151,38 @@ internal static class BreaklineSplitter
             for (int oj = oi + 1; oj < order.Length; oj++)
             {
                 var s2 = segs[order[oj]];
-                if (s2.MinX > s1.MaxX + Eps) break;
-                if (s2.MinY > s1.MaxY + Eps || s2.MaxY < s1.MinY - Eps) continue;
-                if (!Intersect(s1, s2, out double t, out double u)) continue;
+                if (s2.MinX > s1.MaxX + Eps)
+                {
+                    break;
+                }
+
+                if (s2.MinY > s1.MaxY + Eps || s2.MaxY < s1.MinY - Eps)
+                {
+                    continue;
+                }
+
+                if (!Intersect(s1, s2, out double t, out double u))
+                {
+                    continue;
+                }
 
                 bool interior1 = t > Eps && t < 1 - Eps;
                 bool interior2 = u > Eps && u < 1 - Eps;
-                if (!interior1 && !interior2) continue; // общ връх
+                if (!interior1 && !interior2)
+                {
+                    continue; // общ връх
+                }
 
                 // Кота: връх на една от линиите има приоритет, иначе – по-рано добавената линия
                 double z;
-                if (!interior1) z = t < 0.5 ? s1.A.Z : s1.B.Z;
-                else if (!interior2) z = u < 0.5 ? s2.A.Z : s2.B.Z;
+                if (!interior1)
+                {
+                    z = t < 0.5 ? s1.A.Z : s1.B.Z;
+                }
+                else if (!interior2)
+                {
+                    z = u < 0.5 ? s2.A.Z : s2.B.Z;
+                }
                 else
                 {
                     var first = s1.Line < s2.Line || (s1.Line == s2.Line && s1.Index < s2.Index) ? (s1, t) : (s2, u);
@@ -147,8 +192,15 @@ internal static class BreaklineSplitter
                 double x = s1.A.X + (s1.B.X - s1.A.X) * t;
                 double y = s1.A.Y + (s1.B.Y - s1.A.Y) * t;
                 var p = new Point3(x, y, z);
-                if (interior1) Add(inserts, (s1.Line, s1.Index), t, p);
-                if (interior2) Add(inserts, (s2.Line, s2.Index), u, p);
+                if (interior1)
+                {
+                    Add(inserts, (s1.Line, s1.Index), t, p);
+                }
+
+                if (interior2)
+                {
+                    Add(inserts, (s2.Line, s2.Index), u, p);
+                }
             }
         }
 
@@ -160,7 +212,13 @@ internal static class BreaklineSplitter
             for (int i = 1; i < v.Count; i++)
             {
                 if (inserts.TryGetValue((l, i - 1), out var extra))
-                    foreach (var (_, p) in extra.OrderBy(e => e.T)) poly.Add(p);
+                {
+                    foreach (var (_, p) in extra.OrderBy(e => e.T))
+                    {
+                        poly.Add(p);
+                    }
+                }
+
                 poly.Add(v[i]);
             }
 
@@ -172,7 +230,11 @@ internal static class BreaklineSplitter
 
     private static void Add(Dictionary<(int A, int B), List<(double T, Point3 P)>> d, (int A, int B) key, double t, Point3 p)
     {
-        if (!d.TryGetValue(key, out var list)) d[key] = list = new List<(double, Point3)>();
+        if (!d.TryGetValue(key, out var list))
+        {
+            d[key] = list = new List<(double, Point3)>();
+        }
+
         list.Add((t, p));
     }
 
@@ -183,7 +245,11 @@ internal static class BreaklineSplitter
         double sx = s2.B.X - s2.A.X, sy = s2.B.Y - s2.A.Y;
         double den = rx * sy - ry * sx;
         double scale = (Math.Abs(rx) + Math.Abs(ry)) * (Math.Abs(sx) + Math.Abs(sy));
-        if (Math.Abs(den) <= 1e-12 * scale) return false; // успоредни/колинеарни
+        if (Math.Abs(den) <= 1e-12 * scale)
+        {
+            return false; // успоредни/колинеарни
+        }
+
         double qx = s2.A.X - s1.A.X, qy = s2.A.Y - s1.A.Y;
         t = (qx * sy - qy * sx) / den;
         u = (qx * ry - qy * rx) / den;

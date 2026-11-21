@@ -16,7 +16,11 @@ public class DataHullTests
         {
             for (double x = 0; x <= 100; x += 2.5)
             {
-                if (x > 50 && y > 50) continue;
+                if (x > 50 && y > 50)
+                {
+                    continue;
+                }
+
                 bool edge = x == 0 || y == 0 || x == 100 || y == 100 || x == 50 || y == 50;
                 double jx = edge ? 0 : (rnd.NextDouble() - 0.5);
                 double jy = edge ? 0 : (rnd.NextDouble() - 0.5);
@@ -66,7 +70,12 @@ public class ContourPolylineTests
     {
         var pts = new List<Point3>();
         var rnd = new Random(3);
-        for (int i = 0; i < 400; i++) { double x = rnd.NextDouble() * 50, y = rnd.NextDouble() * 50; pts.Add(new Point3(x, y, x / 5)); }
+        for (int i = 0; i < 400; i++)
+        {
+            double x = rnd.NextDouble() * 50, y = rnd.NextDouble() * 50;
+            pts.Add(new Point3(x, y, x / 5));
+        }
+
         pts.AddRange(new[] { new Point3(0, 0, 0), new Point3(50, 0, 10), new Point3(50, 50, 10), new Point3(0, 50, 0) });
         var s = new Surface("p", pts);
         var lines = ContourGenerator.GeneratePolylines(s, 1);
@@ -111,7 +120,9 @@ public class ProfileTests
         for (double y = 0; y <= 100; y += 10)
         {
             for (double x = 0; x <= 100; x += 10)
+            {
                 pts.Add(new Point3(x, y, z(x, y)));
+            }
         }
 
         return new Surface("p", pts);
@@ -211,7 +222,10 @@ public class DxfTests
             Assert.All(pairs.Where(p => p.Item1 is "10" or "20" or "30"), p =>
                 Assert.True(double.TryParse(p.Item2, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out _)));
         }
-        finally { File.Delete(path); }
+        finally
+        {
+            File.Delete(path);
+        }
     }
 
     [Fact]
@@ -227,7 +241,10 @@ public class DxfTests
             Assert.Equal(s.TriangleCount, CountEntity(text, "3DFACE"));
             Assert.Equal(s.Points.Count, CountEntity(text, "POINT"));
         }
-        finally { File.Delete(path); }
+        finally
+        {
+            File.Delete(path);
+        }
     }
 
     [Fact]
@@ -262,10 +279,15 @@ public class DxfTests
             for (int i = 0; i < pairs.Count - 3; i++)
             {
                 if (pairs[i] == ("0", "LAYER") && pairs[i + 1].Item2.StartsWith(DxfWriter.DesignPrefix))
+                {
                     Assert.Equal(("62", "1"), pairs[i + 3]);
+                }
             }
         }
-        finally { File.Delete(path); }
+        finally
+        {
+            File.Delete(path);
+        }
     }
 
     [Fact]
@@ -410,7 +432,13 @@ public class DxfTests
         var l = dxf.Split('\n');
         int n = 0;
         for (int i = 0; i + 1 < l.Length; i += 2)
-            if (l[i].Trim() == "0" && l[i + 1].Trim() == name) n++;
+        {
+            if (l[i].Trim() == "0" && l[i + 1].Trim() == name)
+            {
+                n++;
+            }
+        }
+
         return n;
     }
 }

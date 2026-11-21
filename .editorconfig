@@ -27,12 +27,6 @@ dotnet_diagnostic.SA1200.severity = none   # Using directives must be placed cor
 # Без заглавен коментар с авторски права във всеки файл
 dotnet_diagnostic.SA1633.severity = none   # File must have header
 
-# Кратките проверки остават на един ред: if (x) return;
-dotnet_diagnostic.SA1501.severity = none   # Statement must not be on a single line
-dotnet_diagnostic.SA1503.severity = none   # Braces must not be omitted
-dotnet_diagnostic.SA1520.severity = none   # Use braces consistently
-dotnet_diagnostic.SA1107.severity = none   # Code must not contain multiple statements on one line
-
 # Геометричните формули са по-четими без допълнителни скоби
 dotnet_diagnostic.SA1407.severity = none   # Arithmetic expressions must declare precedence
 
@@ -70,3 +64,15 @@ dotnet_diagnostic.SA1642.severity = none   # Constructor summary documentation m
 
 # Без запетая след последния елемент на многоредов инициализатор
 dotnet_diagnostic.SA1413.severity = none   # Use trailing comma in multi-line initializers
+
+# Задължителни правила за оформлението на блоковете (изрично включени като грешки в CI):
+# скоби за всеки условен оператор и цикъл, всеки оператор на отделен ред,
+# празен ред след всяка затваряща скоба.
+dotnet_diagnostic.SA1503.severity = warning   # Braces must not be omitted
+dotnet_diagnostic.SA1519.severity = warning   # Braces must not be omitted from multi-line child statement
+dotnet_diagnostic.SA1520.severity = warning   # Use braces consistently
+dotnet_diagnostic.SA1501.severity = warning   # Statement must not be on a single line
+dotnet_diagnostic.SA1502.severity = warning   # Element must not be on a single line
+dotnet_diagnostic.SA1107.severity = warning   # Code must not contain multiple statements on one line
+dotnet_diagnostic.SA1500.severity = warning   # Braces for multi-line statements must not share line
+dotnet_diagnostic.SA1513.severity = warning   # Closing brace must be followed by blank line

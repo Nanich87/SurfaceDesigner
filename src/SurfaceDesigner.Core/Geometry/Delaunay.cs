@@ -11,7 +11,10 @@ public static class Delaunay
     public static int[] Triangulate(IReadOnlyList<Point2> points)
     {
         int n = points.Count;
-        if (n < 3) return Array.Empty<int>();
+        if (n < 3)
+        {
+            return Array.Empty<int>();
+        }
 
         // Работим в локални координати, за да не губим точност при големи геодезически координати.
         double ox = points[0].X, oy = points[0].Y;
@@ -68,10 +71,26 @@ public static class Delaunay
             for (int i = 0; i < n; i++)
             {
                 double x = c[2 * i], y = c[2 * i + 1];
-                if (x < minX) minX = x;
-                if (y < minY) minY = y;
-                if (x > maxX) maxX = x;
-                if (y > maxY) maxY = y;
+                if (x < minX)
+                {
+                    minX = x;
+                }
+
+                if (y < minY)
+                {
+                    minY = y;
+                }
+
+                if (x > maxX)
+                {
+                    maxX = x;
+                }
+
+                if (y > maxY)
+                {
+                    maxY = y;
+                }
+
                 ids[i] = i;
             }
 
@@ -82,7 +101,11 @@ public static class Delaunay
             for (int i = 0; i < n; i++)
             {
                 double d = Dist(cx, cy, c[2 * i], c[2 * i + 1]);
-                if (d < minDist) { i0 = i; minDist = d; }
+                if (d < minDist)
+                {
+                    i0 = i;
+                    minDist = d;
+                }
             }
 
             double i0x = c[2 * i0], i0y = c[2 * i0 + 1];
@@ -90,24 +113,47 @@ public static class Delaunay
             minDist = double.PositiveInfinity;
             for (int i = 0; i < n; i++)
             {
-                if (i == i0) continue;
+                if (i == i0)
+                {
+                    continue;
+                }
+
                 double d = Dist(i0x, i0y, c[2 * i], c[2 * i + 1]);
-                if (d < minDist && d > 0) { i1 = i; minDist = d; }
+                if (d < minDist && d > 0)
+                {
+                    i1 = i;
+                    minDist = d;
+                }
             }
 
-            if (i1 < 0) return Array.Empty<int>();
+            if (i1 < 0)
+            {
+                return Array.Empty<int>();
+            }
+
             double i1x = c[2 * i1], i1y = c[2 * i1 + 1];
 
             double minRadius = double.PositiveInfinity;
             for (int i = 0; i < n; i++)
             {
-                if (i == i0 || i == i1) continue;
+                if (i == i0 || i == i1)
+                {
+                    continue;
+                }
+
                 double r = Circumradius(i0x, i0y, i1x, i1y, c[2 * i], c[2 * i + 1]);
-                if (r < minRadius) { i2 = i; minRadius = r; }
+                if (r < minRadius)
+                {
+                    i2 = i;
+                    minRadius = r;
+                }
             }
 
             if (i2 < 0 || double.IsInfinity(minRadius) || double.IsNaN(minRadius))
+            {
                 return Array.Empty<int>(); // всички точки са колинеарни
+            }
+
             double i2x = c[2 * i2], i2y = c[2 * i2 + 1];
 
             if (Orient(i0x, i0y, i1x, i1y, i2x, i2y))
@@ -120,7 +166,11 @@ public static class Delaunay
             (_cx, _cy) = Circumcenter(i0x, i0y, i1x, i1y, i2x, i2y);
 
             var dists = new double[n];
-            for (int i = 0; i < n; i++) dists[i] = Dist(c[2 * i], c[2 * i + 1], _cx, _cy);
+            for (int i = 0; i < n; i++)
+            {
+                dists[i] = Dist(c[2 * i], c[2 * i + 1], _cx, _cy);
+            }
+
             Array.Sort(dists, ids);
 
             _hullStart = i0;
@@ -145,17 +195,28 @@ public static class Delaunay
                 int i = ids[k];
                 double x = c[2 * i], y = c[2 * i + 1];
 
-                if (k > 0 && Math.Abs(x - xp) <= Epsilon && Math.Abs(y - yp) <= Epsilon) continue;
-                xp = x; yp = y;
+                if (k > 0 && Math.Abs(x - xp) <= Epsilon && Math.Abs(y - yp) <= Epsilon)
+                {
+                    continue;
+                }
 
-                if (i == i0 || i == i1 || i == i2) continue;
+                xp = x;
+                yp = y;
+
+                if (i == i0 || i == i1 || i == i2)
+                {
+                    continue;
+                }
 
                 // видимо ребро от обвивката чрез хеша
                 int start = 0;
                 for (int j = 0, key = HashKey(x, y); j < _hashSize; j++)
                 {
                     start = _hullHash[(key + j) % _hashSize];
-                    if (start != -1 && start != _hullNext[start]) break;
+                    if (start != -1 && start != _hullNext[start])
+                    {
+                        break;
+                    }
                 }
 
                 start = _hullPrev[start];
@@ -163,12 +224,23 @@ public static class Delaunay
                 while (true)
                 {
                     q = _hullNext[e];
-                    if (Orient(x, y, c[2 * e], c[2 * e + 1], c[2 * q], c[2 * q + 1])) break;
+                    if (Orient(x, y, c[2 * e], c[2 * e + 1], c[2 * q], c[2 * q + 1]))
+                    {
+                        break;
+                    }
+
                     e = q;
-                    if (e == start) { e = -1; break; }
+                    if (e == start)
+                    {
+                        e = -1;
+                        break;
+                    }
                 }
 
-                if (e == -1) continue; // почти дублирана точка
+                if (e == -1)
+                {
+                    continue; // почти дублирана точка
+                }
 
                 int t = AddTriangle(e, i, _hullNext[e], -1, -1, _hullTri[e]);
                 _hullTri[i] = Legalize(t + 2);
@@ -178,7 +250,11 @@ public static class Delaunay
                 while (true)
                 {
                     q = _hullNext[nn];
-                    if (!Orient(x, y, c[2 * nn], c[2 * nn + 1], c[2 * q], c[2 * q + 1])) break;
+                    if (!Orient(x, y, c[2 * nn], c[2 * nn + 1], c[2 * q], c[2 * q + 1]))
+                    {
+                        break;
+                    }
+
                     t = AddTriangle(nn, i, q, _hullTri[i], -1, _hullTri[nn]);
                     _hullTri[i] = Legalize(t + 2);
                     _hullNext[nn] = nn; // премахната
@@ -190,7 +266,11 @@ public static class Delaunay
                     while (true)
                     {
                         q = _hullPrev[e];
-                        if (!Orient(x, y, c[2 * q], c[2 * q + 1], c[2 * e], c[2 * e + 1])) break;
+                        if (!Orient(x, y, c[2 * q], c[2 * q + 1], c[2 * e], c[2 * e + 1]))
+                        {
+                            break;
+                        }
+
                         t = AddTriangle(q, i, e, -1, _hullTri[e], _hullTri[q]);
                         Legalize(t + 2);
                         _hullTri[q] = t;
@@ -231,7 +311,11 @@ public static class Delaunay
 
                 if (b == -1)
                 {
-                    if (i == 0) break;
+                    if (i == 0)
+                    {
+                        break;
+                    }
+
                     a = _edgeStack[--i];
                     continue;
                 }
@@ -266,7 +350,12 @@ public static class Delaunay
                         int e = _hullStart;
                         do
                         {
-                            if (_hullTri[e] == bl) { _hullTri[e] = a; break; }
+                            if (_hullTri[e] == bl)
+                            {
+                                _hullTri[e] = a;
+                                break;
+                            }
+
                             e = _hullPrev[e];
                         }
                         while (e != _hullStart);
@@ -277,11 +366,18 @@ public static class Delaunay
                     Link(ar, bl);
 
                     int br = b0 + (b + 1) % 3;
-                    if (i < _edgeStack.Length) _edgeStack[i++] = br;
+                    if (i < _edgeStack.Length)
+                    {
+                        _edgeStack[i++] = br;
+                    }
                 }
                 else
                 {
-                    if (i == 0) break;
+                    if (i == 0)
+                    {
+                        break;
+                    }
+
                     a = _edgeStack[--i];
                 }
             }
@@ -292,7 +388,10 @@ public static class Delaunay
         private void Link(int a, int b)
         {
             _halfedges[a] = b;
-            if (b != -1) _halfedges[b] = a;
+            if (b != -1)
+            {
+                _halfedges[b] = a;
+            }
         }
 
         private int AddTriangle(int i0, int i1, int i2, int a, int b, int c)
@@ -321,7 +420,11 @@ public static class Delaunay
     private static double PseudoAngle(double dx, double dy)
     {
         double s = Math.Abs(dx) + Math.Abs(dy);
-        if (s == 0) return 0;
+        if (s == 0)
+        {
+            return 0;
+        }
+
         double p = dx / s;
         return (dy > 0 ? 3 - p : 1 + p) / 4;
     }
@@ -344,7 +447,11 @@ public static class Delaunay
         double bl = dx * dx + dy * dy;
         double cl = ex * ex + ey * ey;
         double den = dx * ey - dy * ex;
-        if (den == 0) return double.PositiveInfinity;
+        if (den == 0)
+        {
+            return double.PositiveInfinity;
+        }
+
         double d = 0.5 / den;
         double x = (ey * bl - dy * cl) * d;
         double y = (dx * cl - ex * bl) * d;

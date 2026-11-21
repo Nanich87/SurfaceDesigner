@@ -62,7 +62,11 @@ public readonly record struct Bounds2(double MinX, double MinY, double MaxX, dou
     public static Bounds2 FromPoints(IEnumerable<Point2> points)
     {
         var b = Empty;
-        foreach (var p in points) b = b.Include(p);
+        foreach (var p in points)
+        {
+            b = b.Include(p);
+        }
+
         return b;
     }
 }

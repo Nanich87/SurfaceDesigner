@@ -22,7 +22,11 @@ internal sealed class TriangleGrid
         int triCount = triangles.Length / 3;
 
         var b = Bounds2.Empty;
-        foreach (var t in triangles) b = b.Include(points[t].X, points[t].Y);
+        foreach (var t in triangles)
+        {
+            b = b.Include(points[t].X, points[t].Y);
+        }
+
         if (triCount == 0 || b.IsEmpty)
         {
             _nx = _ny = 0;
@@ -38,11 +42,18 @@ internal sealed class TriangleGrid
         _nx = Math.Clamp((int)(w / _cell) + 1, 1, 4096);
         _ny = Math.Clamp((int)(h / _cell) + 1, 1, 4096);
         _cell = Math.Max(w / _nx, h / _ny) * (1 + 1e-9);
-        if (_cell <= 0) _cell = 1;
+        if (_cell <= 0)
+        {
+            _cell = 1;
+        }
 
         var counts = new int[_nx * _ny + 1];
         ForEachCell((ix, iy, _) => counts[iy * _nx + ix + 1]++);
-        for (int i = 1; i < counts.Length; i++) counts[i] += counts[i - 1];
+        for (int i = 1; i < counts.Length; i++)
+        {
+            counts[i] += counts[i - 1];
+        }
+
         _cellStart = counts;
         _cellItems = new int[counts[^1]];
         var fill = new int[_nx * _ny];
@@ -68,7 +79,9 @@ internal sealed class TriangleGrid
             for (int iy = y0; iy <= y1; iy++)
             {
                 for (int ix = x0; ix <= x1; ix++)
+                {
                     action(ix, iy, t);
+                }
             }
         }
     }
@@ -80,14 +93,25 @@ internal sealed class TriangleGrid
     public int Find(double x, double y, out double l1, out double l2, out double l3)
     {
         l1 = l2 = l3 = 0;
-        if (_nx == 0) return -1;
+        if (_nx == 0)
+        {
+            return -1;
+        }
+
         double fx = (x - _minX) / _cell, fy = (y - _minY) / _cell;
-        if (fx < -1e-9 || fy < -1e-9 || fx > _nx + 1e-9 || fy > _ny + 1e-9) return -1;
+        if (fx < -1e-9 || fy < -1e-9 || fx > _nx + 1e-9 || fy > _ny + 1e-9)
+        {
+            return -1;
+        }
+
         int c = CellY(y) * _nx + CellX(x);
         for (int k = _cellStart[c]; k < _cellStart[c + 1]; k++)
         {
             int t = _cellItems[k];
-            if (Barycentric(t, x, y, out l1, out l2, out l3)) return t;
+            if (Barycentric(t, x, y, out l1, out l2, out l3))
+            {
+                return t;
+            }
         }
 
         return -1;
@@ -99,7 +123,12 @@ internal sealed class TriangleGrid
         var b = _points[_tris[3 * t + 1]];
         var c = _points[_tris[3 * t + 2]];
         double det = (b.Y - c.Y) * (a.X - c.X) + (c.X - b.X) * (a.Y - c.Y);
-        if (Math.Abs(det) < 1e-18) { l1 = l2 = l3 = 0; return false; }
+        if (Math.Abs(det) < 1e-18)
+        {
+            l1 = l2 = l3 = 0;
+            return false;
+        }
+
         l1 = ((b.Y - c.Y) * (x - c.X) + (c.X - b.X) * (y - c.Y)) / det;
         l2 = ((c.Y - a.Y) * (x - c.X) + (a.X - c.X) * (y - c.Y)) / det;
         l3 = 1 - l1 - l2;

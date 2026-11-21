@@ -20,7 +20,13 @@ public static class ConstrainedDelaunay
         var mesh = new TriMesh(points, null, triangles);
         int failed = 0;
         foreach (var (a, b) in constraints)
-            if (a != b && !mesh.InsertConstraint(a, b)) failed++;
+        {
+            if (a != b && !mesh.InsertConstraint(a, b))
+            {
+                failed++;
+            }
+        }
+
         return new Result(mesh.GetTriangles(), mesh.ConstrainedEdges, failed);
     }
 
@@ -84,17 +90,31 @@ internal sealed class TriMesh
         for (int k = 0; k < _tri.Count; k += 3)
         {
             if (Orient(_tri[k], _tri[k + 1], _tri[k + 2]) < 0)
+            {
                 (_tri[k + 1], _tri[k + 2]) = (_tri[k + 2], _tri[k + 1]);
+            }
         }
 
         _opp = Enumerable.Repeat(-1, _tri.Count).ToList();
         var directed = new Dictionary<(int, int), int>(_tri.Count);
-        for (int e = 0; e < _tri.Count; e++) directed[(_tri[e], _tri[Next(e)])] = e;
         for (int e = 0; e < _tri.Count; e++)
-            if (directed.TryGetValue((_tri[Next(e)], _tri[e]), out int o)) _opp[e] = o;
+        {
+            directed[(_tri[e], _tri[Next(e)])] = e;
+        }
+
+        for (int e = 0; e < _tri.Count; e++)
+        {
+            if (directed.TryGetValue((_tri[Next(e)], _tri[e]), out int o))
+            {
+                _opp[e] = o;
+            }
+        }
 
         _vEdge = Enumerable.Repeat(-1, n).ToList();
-        for (int e = 0; e < _tri.Count; e++) _vEdge[_tri[e]] = e;
+        for (int e = 0; e < _tri.Count; e++)
+        {
+            _vEdge[_tri[e]] = e;
+        }
 
         ConstrainedEdges = constrained != null ? new HashSet<(int, int)>(constrained) : new HashSet<(int, int)>();
     }
@@ -137,7 +157,11 @@ internal sealed class TriMesh
     {
         _around.Clear();
         int start = _vEdge[v];
-        if (start < 0) return;
+        if (start < 0)
+        {
+            return;
+        }
+
         int h = start;
         bool closed = false;
         int guard = 0;
@@ -145,20 +169,40 @@ internal sealed class TriMesh
         {
             _around.Add(h);
             int t = _opp[Prev(h)];
-            if (t < 0) break;
+            if (t < 0)
+            {
+                break;
+            }
+
             h = t;
-            if (h == start) { closed = true; break; }
+            if (h == start)
+            {
+                closed = true;
+                break;
+            }
         }
 
-        if (closed) return;
+        if (closed)
+        {
+            return;
+        }
+
         h = start;
         guard = 0;
         while (guard++ < 100000)
         {
             int t = _opp[h];
-            if (t < 0) break;
+            if (t < 0)
+            {
+                break;
+            }
+
             h = Next(t);
-            if (h == start) break;
+            if (h == start)
+            {
+                break;
+            }
+
             _around.Add(h);
         }
     }
@@ -168,8 +212,15 @@ internal sealed class TriMesh
         CollectAround(u);
         foreach (int h in _around)
         {
-            if (_tri[Next(h)] == w) return h;
-            if (_tri[Prev(h)] == w) return Prev(h);
+            if (_tri[Next(h)] == w)
+            {
+                return h;
+            }
+
+            if (_tri[Prev(h)] == w)
+            {
+                return Prev(h);
+            }
         }
 
         return -1;
@@ -178,12 +229,17 @@ internal sealed class TriMesh
     private void Link(int a, int b)
     {
         _opp[a] = b;
-        if (b >= 0) _opp[b] = a;
+        if (b >= 0)
+        {
+            _opp[b] = a;
+        }
     }
 
     private int AddVertex(double x, double y, double z)
     {
-        _x.Add(x); _y.Add(y); _z.Add(z);
+        _x.Add(x);
+        _y.Add(y);
+        _z.Add(z);
         _vEdge.Add(-1);
         return _x.Count - 1;
     }
@@ -191,14 +247,21 @@ internal sealed class TriMesh
     private int AddTriangle(int a, int b, int c)
     {
         int t = _tri.Count;
-        _tri.Add(a); _tri.Add(b); _tri.Add(c);
-        _opp.Add(-1); _opp.Add(-1); _opp.Add(-1);
+        _tri.Add(a);
+        _tri.Add(b);
+        _tri.Add(c);
+        _opp.Add(-1);
+        _opp.Add(-1);
+        _opp.Add(-1);
         return t;
     }
 
     private void UpdateVEdge(params int[] halfedges)
     {
-        foreach (int h in halfedges) _vEdge[_tri[h]] = h;
+        foreach (int h in halfedges)
+        {
+            _vEdge[_tri[h]] = h;
+        }
     }
 
     // =====================================================================
@@ -215,17 +278,35 @@ internal sealed class TriMesh
         int guard = 0;
         while (stack.Count > 0)
         {
-            if (++guard > 100000) { LastFailure = "guard"; return false; }
+            if (++guard > 100000)
+            {
+                LastFailure = "guard";
+                return false;
+            }
+
             var (s, e) = stack.Pop();
-            if (s == e) continue;
-            if (_vEdge[s] < 0 || _vEdge[e] < 0) { LastFailure = "връх извън мрежата"; return false; }
+            if (s == e)
+            {
+                continue;
+            }
+
+            if (_vEdge[s] < 0 || _vEdge[e] < 0)
+            {
+                LastFailure = "връх извън мрежата";
+                return false;
+            }
+
             if (FindEdge(s, e) >= 0)
             {
                 ConstrainedEdges.Add(Key(s, e));
                 continue;
             }
 
-            if (!Trace(s, e, out var crossing, out int via)) return false;
+            if (!Trace(s, e, out var crossing, out int via))
+            {
+                return false;
+            }
+
             if (via >= 0)
             {
                 stack.Push((via, e));
@@ -233,7 +314,11 @@ internal sealed class TriMesh
                 continue;
             }
 
-            if (!RemoveCrossings(s, e, crossing, restoreDelaunay)) return false;
+            if (!RemoveCrossings(s, e, crossing, restoreDelaunay))
+            {
+                return false;
+            }
+
             ConstrainedEdges.Add(Key(s, e));
         }
 
@@ -251,29 +336,69 @@ internal sealed class TriMesh
         {
             int u = _tri[Next(h)], w = _tri[Prev(h)];
             int su = Sign(Orient(s, e, u)), sw = Sign(Orient(s, e, w));
-            if (su == 0 && Between(s, e, u)) { via = u; return true; }
-            if (sw == 0 && Between(s, e, w)) { via = w; return true; }
-            if (su < 0 && sw > 0) { x = Next(h); break; }
+            if (su == 0 && Between(s, e, u))
+            {
+                via = u;
+                return true;
+            }
+
+            if (sw == 0 && Between(s, e, w))
+            {
+                via = w;
+                return true;
+            }
+
+            if (su < 0 && sw > 0)
+            {
+                x = Next(h);
+                break;
+            }
         }
 
-        if (x < 0) { LastFailure = "не е намерен начален триъгълник (Trace)"; return false; }
+        if (x < 0)
+        {
+            LastFailure = "не е намерен начален триъгълник (Trace)";
+            return false;
+        }
 
         int guard = 0;
         while (guard++ < 1_000_000)
         {
             int u = _tri[x], w = _tri[Next(x)];
-            if (ConstrainedEdges.Contains(Key(u, w))) { LastFailure = "пресича друго ограничение"; return false; }
+            if (ConstrainedEdges.Contains(Key(u, w)))
+            {
+                LastFailure = "пресича друго ограничение";
+                return false;
+            }
+
             crossing.Add((u, w));
             int o = _opp[x];
-            if (o < 0) { LastFailure = "излиза извън мрежата (Trace)"; return false; }
+            if (o < 0)
+            {
+                LastFailure = "излиза извън мрежата (Trace)";
+                return false;
+            }
+
             int v = _tri[Prev(o)];
-            if (v == e) return true;
+            if (v == e)
+            {
+                return true;
+            }
+
             int sv = Sign(Orient(s, e, v));
-            if (sv == 0) { via = v; return true; }
+            if (sv == 0)
+            {
+                via = v;
+                return true;
+            }
+
             x = sv == Sign(Orient(s, e, u)) ? Prev(o) : Next(o);
         }
 
-        { LastFailure = "Trace guard"; return false; }
+        {
+            LastFailure = "Trace guard";
+            return false;
+        }
     }
 
     private bool RemoveCrossings(int s, int e, List<(int A, int B)> crossing, bool restoreDelaunay = true)
@@ -285,12 +410,25 @@ internal sealed class TriMesh
 
         while (queue.Count > 0)
         {
-            if (++guard > limit) { LastFailure = "RemoveCrossings: превишен лимит на флиповете"; return false; }
+            if (++guard > limit)
+            {
+                LastFailure = "RemoveCrossings: превишен лимит на флиповете";
+                return false;
+            }
+
             var (u, w) = queue.Dequeue();
             int h = FindEdge(u, w);
-            if (h < 0) continue;
+            if (h < 0)
+            {
+                continue;
+            }
+
             int o = _opp[h];
-            if (o < 0) { LastFailure = "RemoveCrossings: контурно ребро"; return false; }
+            if (o < 0)
+            {
+                LastFailure = "RemoveCrossings: контурно ребро";
+                return false;
+            }
 
             int p = _tri[h], q = _tri[Next(h)], r = _tri[Prev(h)], t = _tri[Prev(o)];
             if (!IsConvex(p, q, r, t))
@@ -301,9 +439,13 @@ internal sealed class TriMesh
 
             Flip(h);
             if (r != s && r != e && t != s && t != e && SegmentsCross(s, e, r, t))
+            {
                 queue.Enqueue((r, t));
+            }
             else
+            {
                 created.Add((r, t));
+            }
         }
 
         bool changed = restoreDelaunay;
@@ -314,11 +456,23 @@ internal sealed class TriMesh
             for (int i = 0; i < created.Count; i++)
             {
                 var (u, w) = created[i];
-                if (Key(u, w) == Key(s, e) || ConstrainedEdges.Contains(Key(u, w))) continue;
+                if (Key(u, w) == Key(s, e) || ConstrainedEdges.Contains(Key(u, w)))
+                {
+                    continue;
+                }
+
                 int h = FindEdge(u, w);
-                if (h < 0) continue;
+                if (h < 0)
+                {
+                    continue;
+                }
+
                 int o = _opp[h];
-                if (o < 0) continue;
+                if (o < 0)
+                {
+                    continue;
+                }
+
                 int p = _tri[h], q = _tri[Next(h)], r = _tri[Prev(h)], t = _tri[Prev(o)];
                 if (InCircle(p, q, r, t) && IsConvex(p, q, r, t))
                 {
@@ -352,12 +506,28 @@ internal sealed class TriMesh
     /// </summary>
     public bool TrySwapEdge(int a, int b)
     {
-        if (a < 0 || b < 0 || a >= _vEdge.Count || b >= _vEdge.Count) return false;
-        if (ConstrainedEdges.Contains(Key(a, b))) return false;
+        if (a < 0 || b < 0 || a >= _vEdge.Count || b >= _vEdge.Count)
+        {
+            return false;
+        }
+
+        if (ConstrainedEdges.Contains(Key(a, b)))
+        {
+            return false;
+        }
+
         int h = FindEdge(a, b);
-        if (h < 0 || _opp[h] < 0) return false;
+        if (h < 0 || _opp[h] < 0)
+        {
+            return false;
+        }
+
         int p = _tri[h], q = _tri[Next(h)], r = _tri[Prev(h)], t = _tri[Prev(_opp[h])];
-        if (!IsConvex(p, q, r, t)) return false;
+        if (!IsConvex(p, q, r, t))
+        {
+            return false;
+        }
+
         Flip(h);
         return true;
     }
@@ -372,8 +542,12 @@ internal sealed class TriMesh
         int a = _opp[hn], b = _opp[hp], c = _opp[on], d = _opp[op];
         FlipLog?.Add((GetPoint(p), GetPoint(q)));
 
-        _tri[h] = t; _tri[hn] = r; _tri[hp] = p;
-        _tri[o] = r; _tri[on] = t; _tri[op] = q;
+        _tri[h] = t;
+        _tri[hn] = r;
+        _tri[hp] = p;
+        _tri[o] = r;
+        _tri[on] = t;
+        _tri[op] = q;
 
         Link(h, o);
         Link(hn, b);
@@ -398,7 +572,11 @@ internal sealed class TriMesh
     {
         index = -1;
         int nt = _tri.Count / 3;
-        if (nt == 0) return Loc.Outside;
+        if (nt == 0)
+        {
+            return Loc.Outside;
+        }
+
         int t = _lastTri < nt ? _lastTri : 0;
         for (int step = 0; step < 100000; step++)
         {
@@ -413,8 +591,16 @@ internal sealed class TriMesh
                 }
             }
 
-            if (moveTo == -2) return Classify(t, px, py, out index);
-            if (moveTo == -1) break; // извън контура (или вдлъбнатост) – пълно търсене
+            if (moveTo == -2)
+            {
+                return Classify(t, px, py, out index);
+            }
+
+            if (moveTo == -1)
+            {
+                break; // извън контура (или вдлъбнатост) – пълно търсене
+            }
+
             t = moveTo;
         }
 
@@ -422,8 +608,17 @@ internal sealed class TriMesh
         {
             bool inside = true;
             for (int i = 0; i < 3 && inside; i++)
-                if (Sign(OrientP(_tri[3 * t + i], _tri[Next(3 * t + i)], px, py)) < 0) inside = false;
-            if (inside) return Classify(t, px, py, out index);
+            {
+                if (Sign(OrientP(_tri[3 * t + i], _tri[Next(3 * t + i)], px, py)) < 0)
+                {
+                    inside = false;
+                }
+            }
+
+            if (inside)
+            {
+                return Classify(t, px, py, out index);
+            }
         }
 
         return Loc.Outside;
@@ -436,7 +631,11 @@ internal sealed class TriMesh
         {
             int v = _tri[3 * t + i];
             double dx = _x[v] - px, dy = _y[v] - py;
-            if (dx * dx + dy * dy <= SnapTol * SnapTol) { index = v; return Loc.Vertex; }
+            if (dx * dx + dy * dy <= SnapTol * SnapTol)
+            {
+                index = v;
+                return Loc.Vertex;
+            }
         }
 
         for (int i = 0; i < 3; i++)
@@ -444,7 +643,11 @@ internal sealed class TriMesh
             int e = 3 * t + i;
             int a = _tri[e], b = _tri[Next(e)];
             double len = Math.Sqrt((_x[b] - _x[a]) * (_x[b] - _x[a]) + (_y[b] - _y[a]) * (_y[b] - _y[a]));
-            if (Math.Abs(OrientP(a, b, px, py)) <= SnapTol * len) { index = e; return Loc.Edge; }
+            if (Math.Abs(OrientP(a, b, px, py)) <= SnapTol * len)
+            {
+                index = e;
+                return Loc.Edge;
+            }
         }
 
         index = t;
@@ -475,7 +678,9 @@ internal sealed class TriMesh
         int oBC = _opp[e1], oCA = _opp[e2];
 
         // t = (a, b, v): e0: a→b, e1: b→v, e2: v→a
-        _tri[e0] = a; _tri[e1] = b; _tri[e2] = v;
+        _tri[e0] = a;
+        _tri[e1] = b;
+        _tri[e2] = v;
         int f = AddTriangle(b, c, v);  // f: b→c, f+1: c→v, f+2: v→b
         int g = AddTriangle(c, a, v);  // g: c→a, g+1: a→v, g+2: v→c
         Link(f, oBC);
@@ -502,7 +707,11 @@ internal sealed class TriMesh
         int v = AddVertex(_x[p] + dx * tpar, _y[p] + dy * tpar, _z[p] + (_z[q] - _z[p]) * tpar);
 
         bool constrained = ConstrainedEdges.Remove(Key(p, q));
-        if (constrained) { ConstrainedEdges.Add(Key(p, v)); ConstrainedEdges.Add(Key(v, q)); }
+        if (constrained)
+        {
+            ConstrainedEdges.Add(Key(p, v));
+            ConstrainedEdges.Add(Key(v, q));
+        }
 
         // T1 (p,q,r) → (p,v,r) + T3 (v,q,r)
         int oQR = _opp[hn];
@@ -544,7 +753,10 @@ internal sealed class TriMesh
     {
         double ax = a.X - _ox, ay = a.Y - _oy, bx = b.X - _ox, by = b.Y - _oy;
         double segLen = Math.Sqrt((bx - ax) * (bx - ax) + (by - ay) * (by - ay));
-        if (segLen < SnapTol) return;
+        if (segLen < SnapTol)
+        {
+            return;
+        }
 
         int c = InsertPoint(ax, ay);
         double cs = 0; // изминат дял от отсечката
@@ -554,10 +766,18 @@ internal sealed class TriMesh
         while (guard++ < 1_000_000)
         {
             // последна защита: една отсечка не може да създаде повече върхове от броя на ребрата в мрежата
-            if (_x.Count - startVertices > _tri.Count + 16) return;
+            if (_x.Count - startVertices > _tri.Count + 16)
+            {
+                return;
+            }
+
             if (c < 0)
             {
-                if (!FindEntry(ax, ay, bx, by, cs, out double es, out int entryEdge, out double ex, out double ey)) return;
+                if (!FindEntry(ax, ay, bx, by, cs, out double es, out int entryEdge, out double ex, out double ey))
+                {
+                    return;
+                }
+
                 c = Classify(entryEdge / 3, ex, ey, out int idx) switch
                 {
                     Loc.Vertex => idx,
@@ -569,7 +789,10 @@ internal sealed class TriMesh
             }
 
             double dbx = bx - _x[c], dby = by - _y[c];
-            if (dbx * dbx + dby * dby <= SnapTol * SnapTol) return; // достигнат край
+            if (dbx * dbx + dby * dby <= SnapTol * SnapTol)
+            {
+                return; // достигнат край
+            }
 
             int next = Step(c, bx, by);
             if (next < 0)
@@ -582,7 +805,10 @@ internal sealed class TriMesh
 
             // защита от зацикляне: всяка стъпка трябва да напредва по отсечката
             double ns = Param(ax, ay, bx, by, _x[next], _y[next]);
-            if (next == c || ns <= cs + minAdvance * 0.5) return;
+            if (next == c || ns <= cs + minAdvance * 0.5)
+            {
+                return;
+            }
 
             ConstrainedEdges.Add(Key(c, next));
             c = next;
@@ -614,9 +840,17 @@ internal sealed class TriMesh
                 double ux = _x[u] - _x[c], uy = _y[u] - _y[c];
                 double cross = dx * uy - dy * ux;
                 double dot = dx * ux + dy * uy;
-                if (dot <= 0 || Math.Abs(cross) > SnapTol * distB) continue;
+                if (dot <= 0 || Math.Abs(cross) > SnapTol * distB)
+                {
+                    continue;
+                }
+
                 double du2 = ux * ux + uy * uy;
-                if (du2 <= distB2 + SnapTol) return u;     // u е между c и B (или е B)
+                if (du2 <= distB2 + SnapTol)
+                {
+                    return u;     // u е между c и B (или е B)
+                }
+
                 return SplitEdge(hh, bx, by);              // B лежи върху реброто c–u
             }
         }
@@ -627,24 +861,46 @@ internal sealed class TriMesh
             int u = _tri[Next(h)], w = _tri[Prev(h)];
             double su = OrientP(c, u, bx, by); // B отляво на c→u
             double sw = OrientP(c, w, bx, by); // B отдясно на c→w
-            if (su <= 0 || sw >= 0) continue;
+            if (su <= 0 || sw >= 0)
+            {
+                continue;
+            }
 
             double sb = OrientP(u, w, bx, by);
             int t = h / 3;
             double lenUW = Math.Sqrt((_x[w] - _x[u]) * (_x[w] - _x[u]) + (_y[w] - _y[u]) * (_y[w] - _y[u]));
-            if (sb > SnapTol * lenUW) return SplitFace(t, bx, by);          // B е вътре в триъгълника
-            if (Math.Abs(sb) <= SnapTol * lenUW) return SplitEdge(Next(h), bx, by); // B е върху u–w
+            if (sb > SnapTol * lenUW)
+            {
+                return SplitFace(t, bx, by);          // B е вътре в триъгълника
+            }
+
+            if (Math.Abs(sb) <= SnapTol * lenUW)
+            {
+                return SplitEdge(Next(h), bx, by); // B е върху u–w
+            }
 
             // Пресечна точка на c→B с u–w
             double rx = _x[w] - _x[u], ry = _y[w] - _y[u];
             double den = dx * ry - dy * rx;
-            if (Math.Abs(den) < 1e-300) return -1;
+            if (Math.Abs(den) < 1e-300)
+            {
+                return -1;
+            }
+
             double s = ((_x[u] - _x[c]) * ry - (_y[u] - _y[c]) * rx) / den;
             double ix = _x[c] + dx * s, iy = _y[c] + dy * s;
 
             // пресечна точка практически във връх – използва се самият връх
-            if ((ix - _x[u]) * (ix - _x[u]) + (iy - _y[u]) * (iy - _y[u]) <= SnapTol * SnapTol) return u;
-            if ((ix - _x[w]) * (ix - _x[w]) + (iy - _y[w]) * (iy - _y[w]) <= SnapTol * SnapTol) return w;
+            if ((ix - _x[u]) * (ix - _x[u]) + (iy - _y[u]) * (iy - _y[u]) <= SnapTol * SnapTol)
+            {
+                return u;
+            }
+
+            if ((ix - _x[w]) * (ix - _x[w]) + (iy - _y[w]) * (iy - _y[w]) <= SnapTol * SnapTol)
+            {
+                return w;
+            }
+
             return SplitEdge(Next(h), ix, iy);
         }
 
@@ -674,7 +930,11 @@ internal sealed class TriMesh
 
         for (int e = 0; e < _tri.Count; e++)
         {
-            if (_opp[e] >= 0) continue;
+            if (_opp[e] >= 0)
+            {
+                continue;
+            }
+
             int p = _tri[e], q = _tri[Next(e)];
             double rx = _x[q] - _x[p], ry = _y[q] - _y[p];
             double den = dx * ry - dy * rx;
@@ -682,15 +942,31 @@ internal sealed class TriMesh
             // Мрежата е отляво на външното полуребро p→q. Истинско влизане = пресичане отдясно наляво
             // под ненулев ъгъл; плъзгане по почти колинеарно ребро не е влизане.
             double rlen = Math.Sqrt(rx * rx + ry * ry);
-            if (-den <= 1e-9 * rlen * len) continue;
+            if (-den <= 1e-9 * rlen * len)
+            {
+                continue;
+            }
+
             double qx = _x[p] - ax, qy = _y[p] - ay;
             double s = (qx * ry - qy * rx) / den;
             double r = (qx * dy - qy * dx) / den;
-            if (s < minS || s > 1 + 1e-12 || r < -1e-12 || r > 1 + 1e-12) continue;
-            if (s < entryS) { entryS = s; edge = e; }
+            if (s < minS || s > 1 + 1e-12 || r < -1e-12 || r > 1 + 1e-12)
+            {
+                continue;
+            }
+
+            if (s < entryS)
+            {
+                entryS = s;
+                edge = e;
+            }
         }
 
-        if (edge < 0) return false;
+        if (edge < 0)
+        {
+            return false;
+        }
+
         ex = ax + dx * entryS;
         ey = ay + dy * entryS;
         return true;

@@ -13,7 +13,11 @@ public sealed class ProjectSaveTests : IDisposable
     /// <inheritdoc/>
     public void Dispose()
     {
-        try { Directory.Delete(_dir, recursive: true); } catch (IOException) { }
+        try
+        {
+            Directory.Delete(_dir, recursive: true);
+        }
+        catch (IOException) { }
     }
 
     private static Project MakeProject(string surfaceName)

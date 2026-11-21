@@ -15,7 +15,9 @@ public class TriangulationTests
         for (int y = 0; y < 10; y++)
         {
             for (int x = 0; x < 10; x++)
+            {
                 pts.Add(new Point2(x, y));
+            }
         }
 
         var tris = Delaunay.Triangulate(pts);
@@ -32,13 +34,18 @@ public class TriangulationTests
         // сумата от площите на триъгълниците = площта на изпъкналата обвивка (без застъпване)
         double area = 0;
         for (int k = 0; k < tris.Length; k += 3)
+        {
             area += Math.Abs(Point2.Cross(pts[tris[k + 1]] - pts[tris[k]], pts[tris[k + 2]] - pts[tris[k]])) / 2;
+        }
+
         Assert.InRange(area, 0.97e6, 1.0e6);
 
         // нито една точка вътре в описаната окръжност на триъгълник (проверка на извадка)
         for (int k = 0; k < Math.Min(tris.Length, 600); k += 3)
         {
-            var a = pts[tris[k]]; var b = pts[tris[k + 1]]; var c = pts[tris[k + 2]];
+            var a = pts[tris[k]];
+            var b = pts[tris[k + 1]];
+            var c = pts[tris[k + 2]];
             double d = 2 * (a.X * (b.Y - c.Y) + b.X * (c.Y - a.Y) + c.X * (a.Y - b.Y));
             double ux = ((a.X * a.X + a.Y * a.Y) * (b.Y - c.Y) + (b.X * b.X + b.Y * b.Y) * (c.Y - a.Y) + (c.X * c.X + c.Y * c.Y) * (a.Y - b.Y)) / d;
             double uy = ((a.X * a.X + a.Y * a.Y) * (c.X - b.X) + (b.X * b.X + b.Y * b.Y) * (a.X - c.X) + (c.X * c.X + c.Y * c.Y) * (b.X - a.X)) / d;
@@ -54,7 +61,9 @@ public class TriangulationTests
         for (int y = 0; y < 5; y++)
         {
             for (int x = 0; x < 5; x++)
+            {
                 pts.Add(new Point3(8_500_000 + x * 10, 4_700_000 + y * 10, 500 + x));
+            }
         }
 
         var s = new Surface("big", pts);
@@ -72,7 +81,9 @@ public class SurfaceTests
         for (double y = 0; y <= size; y += step)
         {
             for (double x = 0; x <= size; x += step)
+            {
                 pts.Add(new Point3(x, y, f(x, y)));
+            }
         }
 
         return new Surface("plane", pts);
@@ -144,7 +155,9 @@ public class GradingTests
         for (double y = -size; y <= size; y += 5)
         {
             for (double x = -size; x <= size; x += 5)
+            {
                 pts.Add(new Point3(x, y, z));
+            }
         }
 
         return new Surface("flat", pts);
@@ -192,7 +205,9 @@ public class GradingTests
         for (double y = -60; y <= 60; y += 5)
         {
             for (double x = -60; x <= 60; x += 5)
+            {
                 pts.Add(new Point3(x, y, 100 + 0.1 * x));
+            }
         }
 
         var eg = new Surface("incl", pts);
@@ -299,6 +314,9 @@ public class IoTests
             var ns = System.Xml.Linq.XNamespace.Get("http://www.landxml.org/schema/LandXML-1.2");
             Assert.Equal(s.TriangleCount, doc.Descendants(ns + "F").Count());
         }
-        finally { File.Delete(path); }
+        finally
+        {
+            File.Delete(path);
+        }
     }
 }

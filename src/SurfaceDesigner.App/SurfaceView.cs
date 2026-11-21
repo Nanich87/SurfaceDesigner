@@ -214,28 +214,48 @@ public sealed class SurfaceView : FrameworkElement
             var st = s.GetStatistics();
             _zMin = st.MinZ;
             _zMax = st.MaxZ;
-            if (ColorMode != ColorMode.None) BuildFills(s);
+            if (ColorMode != ColorMode.None)
+            {
+                BuildFills(s);
+            }
+
             if (contours && ShowContourLabels)
+            {
                 BuildLabelLines(s, s.IsDesign ? DesignMajorBrush : ExistingLabelBrush, phase: 0.5);
+            }
         }
 
         // Всички видими повърхнини (вкл. активната) – със своите триъгълници и хоризонтали
         var visible = BackgroundSurfaces.Where(o => !ReferenceEquals(o, s)).Select(o => (Surface: o, Active: false)).ToList();
-        if (s != null) visible.Add((s, true));
+        if (s != null)
+        {
+            visible.Add((s, true));
+        }
+
         foreach (var (o, active) in visible
                      .Where(v => v.Surface.IsVisible && v.Surface.TriangleCount > 0)
                      .OrderBy(v => v.Surface.IsDesign).ThenBy(v => v.Active))
         {
             Geometry? mi = null, ma = null;
-            if (contours) (mi, ma) = BuildContours(o);
+            if (contours)
+            {
+                (mi, ma) = BuildContours(o);
+            }
+
             _layers.Add(new SurfaceLayer(o.Name, o.IsDesign, active, o.EffectiveContourInterval(), ShowTriangles ? BuildEdges(o) : null, mi, ma));
 
             // надписите на другите повърхнини – разместени с половин интервал спрямо активната
             if (!active && contours && ShowContourLabels && ShowBackgroundLabels)
+            {
                 BuildLabelLines(o, o.IsDesign ? DesignMajorBrush : ExistingLabelBrush, phase: 1.0);
+            }
         }
 
-        if (CutFill != null && ShowCutFill) BuildCutFill(CutFill);
+        if (CutFill != null && ShowCutFill)
+        {
+            BuildCutFill(CutFill);
+        }
+
         InvalidateVisual();
     }
 
@@ -246,12 +266,28 @@ public sealed class SurfaceView : FrameworkElement
         if (Project != null)
         {
             foreach (var s in Project.Surfaces)
-                if (s.Points.Count > 0) b = b.Union(s.Bounds);
-            foreach (var p in Project.Platforms) b = b.Union(Bounds2.FromPoints(p.Boundary));
+            {
+                if (s.Points.Count > 0)
+                {
+                    b = b.Union(s.Bounds);
+                }
+            }
+
+            foreach (var p in Project.Platforms)
+            {
+                b = b.Union(Bounds2.FromPoints(p.Boundary));
+            }
         }
 
-        if (b.IsEmpty) b = new Bounds2(0, 0, 100, 100);
-        if (b.Width < 1e-6 || b.Height < 1e-6) b = b.Inflate(10);
+        if (b.IsEmpty)
+        {
+            b = new Bounds2(0, 0, 100, 100);
+        }
+
+        if (b.Width < 1e-6 || b.Height < 1e-6)
+        {
+            b = b.Inflate(10);
+        }
 
         _origin = new Point2(Math.Round(b.MinX), Math.Round(b.MinY));
         double w = Math.Max(ActualWidth, 100), h = Math.Max(ActualHeight, 100);
@@ -279,23 +315,36 @@ public sealed class SurfaceView : FrameworkElement
         var t = s.Triangles;
         int triCount = t.Length / 3;
         var bins = new List<int>[ElevationBins];
-        for (int i = 0; i < bins.Length; i++) bins[i] = new List<int>();
+        for (int i = 0; i < bins.Length; i++)
+        {
+            bins[i] = new List<int>();
+        }
+
         double range = Math.Max(_zMax - _zMin, 1e-9);
 
         for (int k = 0; k < triCount; k++)
         {
             double v;
             if (ColorMode == ColorMode.Slope)
+            {
                 v = Math.Min(s.TriangleSlopePercent(k), ColorRamp.MaxSlopePercent) / ColorRamp.MaxSlopePercent;
+            }
             else
+            {
                 v = ((pts[t[3 * k]].Z + pts[t[3 * k + 1]].Z + pts[t[3 * k + 2]].Z) / 3 - _zMin) / range;
+            }
+
             int bin = Math.Clamp((int)(v * ElevationBins), 0, ElevationBins - 1);
             bins[bin].Add(k);
         }
 
         for (int b = 0; b < ElevationBins; b++)
         {
-            if (bins[b].Count == 0) continue;
+            if (bins[b].Count == 0)
+            {
+                continue;
+            }
+
             double tv = (b + 0.5) / ElevationBins;
             var color = ColorMode == ColorMode.Slope
                 ? ColorRamp.Slope(tv * ColorRamp.MaxSlopePercent)
@@ -366,17 +415,34 @@ public sealed class SurfaceView : FrameworkElement
         const int binsPerSide = 12;
         _cutFillMaxAbs = 0;
         foreach (var d in grid.MeanDepth)
-            if (!double.IsNaN(d)) _cutFillMaxAbs = Math.Max(_cutFillMaxAbs, Math.Abs(d));
-        if (_cutFillMaxAbs < 1e-6) return;
+        {
+            if (!double.IsNaN(d))
+            {
+                _cutFillMaxAbs = Math.Max(_cutFillMaxAbs, Math.Abs(d));
+            }
+        }
+
+        if (_cutFillMaxAbs < 1e-6)
+        {
+            return;
+        }
 
         var bins = new List<int>[2 * binsPerSide];
-        for (int i = 0; i < bins.Length; i++) bins[i] = new List<int>();
+        for (int i = 0; i < bins.Length; i++)
+        {
+            bins[i] = new List<int>();
+        }
+
         for (int iy = 0; iy < grid.Ny; iy++)
         {
             for (int ix = 0; ix < grid.Nx; ix++)
             {
                 double d = grid.MeanDepth[grid.Index(ix, iy)];
-                if (double.IsNaN(d) || Math.Abs(d) < 0.005) continue;
+                if (double.IsNaN(d) || Math.Abs(d) < 0.005)
+                {
+                    continue;
+                }
+
                 int b = Math.Clamp((int)(Math.Abs(d) / _cutFillMaxAbs * binsPerSide), 0, binsPerSide - 1);
                 bins[(d < 0 ? 0 : binsPerSide) + b].Add(grid.Index(ix, iy));
             }
@@ -384,7 +450,11 @@ public sealed class SurfaceView : FrameworkElement
 
         for (int i = 0; i < bins.Length; i++)
         {
-            if (bins[i].Count == 0) continue;
+            if (bins[i].Count == 0)
+            {
+                continue;
+            }
+
             bool cut = i < binsPerSide;
             double depth = ((i % binsPerSide) + 0.5) / binsPerSide * _cutFillMaxAbs * (cut ? -1 : 1);
             var g = new StreamGeometry();
@@ -416,17 +486,33 @@ public sealed class SurfaceView : FrameworkElement
         drawingContext.PushTransform(new MatrixTransform(_scale, 0, 0, -_scale, _panX, _panY));
 
         foreach (var (brush, g) in _fills)
+        {
             drawingContext.DrawGeometry(brush, new Pen(brush, 0.7 * px), g);
+        }
+
         foreach (var (brush, g) in _cutFillCells)
+        {
             drawingContext.DrawGeometry(brush, null, g);
+        }
 
         // видимите повърхнини – теренните отдолу, проектните отгоре
         foreach (var layer in _layers)
         {
             bool d = layer.Design;
-            if (layer.Edges != null) drawingContext.DrawGeometry(null, new Pen(d ? DesignEdgeBrush : EdgeBrush, px), layer.Edges);
-            if (layer.Minor != null) drawingContext.DrawGeometry(null, new Pen(d ? DesignMinorBrush : MinorContourBrush, (d ? 1.3 : 1) * px), layer.Minor);
-            if (layer.Major != null) drawingContext.DrawGeometry(null, new Pen(d ? DesignMajorBrush : MajorContourBrush, (d ? 2.3 : 2) * px), layer.Major);
+            if (layer.Edges != null)
+            {
+                drawingContext.DrawGeometry(null, new Pen(d ? DesignEdgeBrush : EdgeBrush, px), layer.Edges);
+            }
+
+            if (layer.Minor != null)
+            {
+                drawingContext.DrawGeometry(null, new Pen(d ? DesignMinorBrush : MinorContourBrush, (d ? 1.3 : 1) * px), layer.Minor);
+            }
+
+            if (layer.Major != null)
+            {
+                drawingContext.DrawGeometry(null, new Pen(d ? DesignMajorBrush : MajorContourBrush, (d ? 2.3 : 2) * px), layer.Major);
+            }
         }
 
         if (ActiveSurface is { IsVisible: true } active)
@@ -463,7 +549,11 @@ public sealed class SurfaceView : FrameworkElement
         {
             foreach (var p in Project.Platforms)
             {
-                if (p.Boundary.Count < 2) continue;
+                if (p.Boundary.Count < 2)
+                {
+                    continue;
+                }
+
                 bool sel = ReferenceEquals(p, SelectedPlatform);
                 drawingContext.DrawGeometry(
                     PlatformFill,
@@ -473,7 +563,9 @@ public sealed class SurfaceView : FrameworkElement
         }
 
         if (SelectionPolygon is { Count: >= 3 })
+        {
             drawingContext.DrawGeometry(SelectionFill, new Pen(SelectionStroke, 2 * px) { DashStyle = DashStyles.Dash }, PolygonGeometry(SelectionPolygon, true));
+        }
 
         drawingContext.Pop(); // трансформация
 
@@ -505,7 +597,11 @@ public sealed class SurfaceView : FrameworkElement
 
     private void DrawPoints(DrawingContext dc, Rect viewport)
     {
-        if (!ShowPoints || ActiveSurface == null || !ActiveVisible) return;
+        if (!ShowPoints || ActiveSurface == null || !ActiveVisible)
+        {
+            return;
+        }
+
         var pts = ActiveSurface.Points;
         var g = new StreamGeometry();
         int drawn = 0;
@@ -514,10 +610,17 @@ public sealed class SurfaceView : FrameworkElement
             foreach (var p in pts)
             {
                 var s = ToScreen(p.XY);
-                if (!viewport.Contains(s)) continue;
+                if (!viewport.Contains(s))
+                {
+                    continue;
+                }
+
                 ctx.BeginFigure(new Point(s.X - 1.5, s.Y - 1.5), true, true);
                 ctx.PolyLineTo(new[] { new Point(s.X + 1.5, s.Y - 1.5), new Point(s.X + 1.5, s.Y + 1.5), new Point(s.X - 1.5, s.Y + 1.5) }, false, false);
-                if (++drawn > 200_000) break;
+                if (++drawn > 200_000)
+                {
+                    break;
+                }
             }
         }
 
@@ -529,7 +632,10 @@ public sealed class SurfaceView : FrameworkElement
             foreach (var v in bl.Vertices)
             {
                 var sv = ToScreen(v.XY);
-                if (viewport.Contains(sv)) dc.DrawRectangle(BreaklineBrush, null, new Rect(sv.X - 2.5, sv.Y - 2.5, 5, 5));
+                if (viewport.Contains(sv))
+                {
+                    dc.DrawRectangle(BreaklineBrush, null, new Rect(sv.X - 2.5, sv.Y - 2.5, 5, 5));
+                }
             }
         }
 
@@ -565,7 +671,11 @@ public sealed class SurfaceView : FrameworkElement
         if (ProfileLine is { Count: >= 2 })
         {
             var pen = new Pen(ProfileBrush, 2.5) { LineJoin = PenLineJoin.Round };
-            for (int i = 1; i < ProfileLine.Count; i++) dc.DrawLine(pen, ToScreen(ProfileLine[i - 1]), ToScreen(ProfileLine[i]));
+            for (int i = 1; i < ProfileLine.Count; i++)
+            {
+                dc.DrawLine(pen, ToScreen(ProfileLine[i - 1]), ToScreen(ProfileLine[i]));
+            }
+
             var s0 = ToScreen(ProfileLine[0]);
             dc.DrawEllipse(ProfileBrush, null, s0, 5, 5);
             DrawLabel(dc, "0+000", new Point(s0.X + 7, s0.Y - 8));
@@ -581,12 +691,28 @@ public sealed class SurfaceView : FrameworkElement
 
     private void DrawPlatformLabels(DrawingContext dc)
     {
-        if (Project == null) return;
+        if (Project == null)
+        {
+            return;
+        }
+
         foreach (var p in Project.Platforms)
         {
-            if (p.Boundary.Count < 3) continue;
+            if (p.Boundary.Count < 3)
+            {
+                continue;
+            }
+
             Point2 c;
-            try { c = p.GetReferencePoint(); } catch (ArgumentException) { continue; }
+            try
+            {
+                c = p.GetReferencePoint();
+            }
+            catch (ArgumentException)
+            {
+                continue;
+            }
+
             var s = ToScreen(c);
             string slope = p.SlopeXPercent != 0 || p.SlopeYPercent != 0
                 ? $"\ni = {p.SlopeXPercent:0.##}% / {p.SlopeYPercent:0.##}%"
@@ -619,15 +745,37 @@ public sealed class SurfaceView : FrameworkElement
     {
         bool breakline = _tool is ToolMode.DrawBreakline or ToolMode.DrawProfile;
         if (breakline && _mouseInside && Snap(_mouseWorld) is { } snap)
+        {
             dc.DrawRectangle(null, new Pen(SnapBrush, 2), new Rect(ToScreen(snap).X - 6, ToScreen(snap).Y - 6, 12, 12));
+        }
 
-        if (_draft.Count == 0) return;
+        if (_draft.Count == 0)
+        {
+            return;
+        }
+
         var pen = new Pen(breakline ? BreaklineBrush : DraftStroke, 1.5) { DashStyle = DashStyles.Dash };
         var pts = _draft.Select(ToScreen).ToList();
-        if (_mouseInside) pts.Add(ToScreen(breakline ? Snap(_mouseWorld) ?? _mouseWorld : _mouseWorld));
-        for (int i = 1; i < pts.Count; i++) dc.DrawLine(pen, pts[i - 1], pts[i]);
-        if (!breakline && pts.Count >= 3) dc.DrawLine(new Pen(DraftStroke, 0.8) { DashStyle = DashStyles.Dot }, pts[^1], pts[0]);
-        foreach (var p in _draft) dc.DrawEllipse(DraftStroke, null, ToScreen(p), 3, 3);
+        if (_mouseInside)
+        {
+            pts.Add(ToScreen(breakline ? Snap(_mouseWorld) ?? _mouseWorld : _mouseWorld));
+        }
+
+        for (int i = 1; i < pts.Count; i++)
+        {
+            dc.DrawLine(pen, pts[i - 1], pts[i]);
+        }
+
+        if (!breakline && pts.Count >= 3)
+        {
+            dc.DrawLine(new Pen(DraftStroke, 0.8) { DashStyle = DashStyles.Dot }, pts[^1], pts[0]);
+        }
+
+        foreach (var p in _draft)
+        {
+            dc.DrawEllipse(DraftStroke, null, ToScreen(p), 3, 3);
+        }
+
         DrawLabel(
             dc,
             _tool == ToolMode.DrawProfile ? "Трасе на профила: ляв бутон – връх (прилепва към точки), десен/Enter – край, Esc – отказ" : breakline ? "Ляв бутон – връх (прилепва към точки), щракване върху първия връх – затваряне, десен/Enter – край, Esc – отказ" : "Ляв бутон – връх, десен/Enter – край, Esc – отказ",
@@ -637,11 +785,20 @@ public sealed class SurfaceView : FrameworkElement
     /// <summary>Прилепване към точка или връх на структурна линия на активната повърхнина.</summary>
     private Point2? Snap(Point2 world)
     {
-        if (ActiveSurface == null) return null;
+        if (ActiveSurface == null)
+        {
+            return null;
+        }
+
         double r = PickRadiusPx / _scale;
         Point2? best = null;
         double bestD = r;
-        if (_draft.Count >= 3 && Point2.Distance(_draft[0], world) <= bestD) { best = _draft[0]; bestD = Point2.Distance(_draft[0], world); }
+        if (_draft.Count >= 3 && Point2.Distance(_draft[0], world) <= bestD)
+        {
+            best = _draft[0];
+            bestD = Point2.Distance(_draft[0], world);
+        }
+
         int i = ActiveSurface.FindNearestPoint(world.X, world.Y, r);
         if (i >= 0 && Point2.Distance(ActiveSurface.Points[i].XY, world) < bestD)
         {
@@ -654,7 +811,11 @@ public sealed class SurfaceView : FrameworkElement
             foreach (var v in bl.Vertices)
             {
                 double d = Point2.Distance(v.XY, world);
-                if (d < bestD) { bestD = d; best = v.XY; }
+                if (d < bestD)
+                {
+                    bestD = d;
+                    best = v.XY;
+                }
             }
         }
 
@@ -667,8 +828,16 @@ public sealed class SurfaceView : FrameworkElement
     /// <summary>Подсказка за инструмента „Завърти ребро“: реброто под курсора и новият диагонал.</summary>
     private void DrawSwapPreview(DrawingContext dc)
     {
-        if (_tool != ToolMode.SwapEdge || !_mouseInside || ActiveSurface == null) return;
-        if (!ActiveSurface.TryFindEdge(_mouseWorld.X, _mouseWorld.Y, double.PositiveInfinity, out int a, out int b)) return;
+        if (_tool != ToolMode.SwapEdge || !_mouseInside || ActiveSurface == null)
+        {
+            return;
+        }
+
+        if (!ActiveSurface.TryFindEdge(_mouseWorld.X, _mouseWorld.Y, double.PositiveInfinity, out int a, out int b))
+        {
+            return;
+        }
+
         var v = ActiveSurface.Vertices;
         if (ActiveSurface.CanSwapEdge(a, b, out int r, out int t, out var reason))
         {
@@ -685,11 +854,17 @@ public sealed class SurfaceView : FrameworkElement
 
     private void DrawDragFeedback(DrawingContext dc)
     {
-        if (_dragPoint < 0) return; // контурът на платформа се рисува директно при влачене
+        if (_dragPoint < 0)
+        {
+            return; // контурът на платформа се рисува директно при влачене
+        }
+
         var s = ToScreen(_dragPos);
         dc.DrawEllipse(HighlightBrush, null, s, 4, 4);
         if (_dragPoint >= 0 && ActiveSurface != null)
+        {
             dc.DrawLine(new Pen(HighlightBrush, 1) { DashStyle = DashStyles.Dash }, ToScreen(ActiveSurface.Points[_dragPoint].XY), s);
+        }
     }
 
     private void DrawLegend(DrawingContext dc, Rect viewport)
@@ -786,7 +961,11 @@ public sealed class SurfaceView : FrameworkElement
         string fmt = interval >= 1 ? "0.#" : interval >= 0.1 ? "0.0#" : "0.00#";
         foreach (var l in lines)
         {
-            if (anyMajor && !l.IsMajor) continue;
+            if (anyMajor && !l.IsMajor)
+            {
+                continue;
+            }
+
             var pts = l.Points.Select(ToLocal).ToArray();
             double minX = pts.Min(p => p.X), maxX = pts.Max(p => p.X), minY = pts.Min(p => p.Y), maxY = pts.Max(p => p.Y);
             _labelLines.Add(new LabelLine(
@@ -800,7 +979,11 @@ public sealed class SurfaceView : FrameworkElement
 
     private void DrawContourLabels(DrawingContext dc, Rect viewport)
     {
-        if (_labelLines.Count == 0) return;
+        if (_labelLines.Count == 0)
+        {
+            return;
+        }
+
         double dpi = VisualTreeHelper.GetDpi(this).PixelsPerDip;
         var typeface = new Typeface(new FontFamily("Segoe UI"), FontStyles.Normal, FontWeights.SemiBold, FontStretches.Normal);
 
@@ -813,7 +996,11 @@ public sealed class SurfaceView : FrameworkElement
         var placed = new List<Rect>(); // заети места – надписите не се застъпват (активната повърхнина е първа)
         foreach (var line in _labelLines)
         {
-            if (!visible.IntersectsWith(line.Bounds)) continue;
+            if (!visible.IntersectsWith(line.Bounds))
+            {
+                continue;
+            }
+
             var ft = new FormattedText(line.Text, CultureInfo.InvariantCulture, FlowDirection.LeftToRight, typeface, LabelFontSize, line.Brush, dpi);
             double w = ft.Width + 6;
 
@@ -823,11 +1010,17 @@ public sealed class SurfaceView : FrameworkElement
             for (int i = 0; i < sp.Length; i++)
             {
                 sp[i] = new Point(line.Local[i].X * _scale + _panX, -line.Local[i].Y * _scale + _panY);
-                if (i > 0) acc[i] = acc[i - 1] + (sp[i] - sp[i - 1]).Length;
+                if (i > 0)
+                {
+                    acc[i] = acc[i - 1] + (sp[i] - sp[i - 1]).Length;
+                }
             }
 
             double total = acc[^1];
-            if (total < w * 2) continue;
+            if (total < w * 2)
+            {
+                continue;
+            }
 
             // първият надпис – по средата на първия интервал, после през LabelSpacingPx
             double first = Math.Min(LabelSpacingPx * line.Phase, total / 2);
@@ -839,19 +1032,37 @@ public sealed class SurfaceView : FrameworkElement
                     double c = d + shift;
                     var p0 = AtDistance(sp, acc, c - w / 2);
                     var p1 = AtDistance(sp, acc, c + w / 2);
-                    if ((p1 - p0).Length < 0.9 * w) continue; // твърде извито
+                    if ((p1 - p0).Length < 0.9 * w)
+                    {
+                        continue; // твърде извито
+                    }
+
                     var center = AtDistance(sp, acc, c);
-                    if (!viewport.Contains(center)) break;
+                    if (!viewport.Contains(center))
+                    {
+                        break;
+                    }
 
                     double angle = Math.Atan2(p1.Y - p0.Y, p1.X - p0.X) * 180 / Math.PI;
-                    if (angle > 90) angle -= 180;   // винаги четимо отляво надясно
-                    if (angle < -90) angle += 180;
+                    if (angle > 90)
+                    {
+                        angle -= 180;   // винаги четимо отляво надясно
+                    }
+
+                    if (angle < -90)
+                    {
+                        angle += 180;
+                    }
 
                     // обхващащ правоъгълник на завъртения надпис – проверка за застъпване
                     double rad = angle * Math.PI / 180, cs = Math.Abs(Math.Cos(rad)), sn = Math.Abs(Math.Sin(rad));
                     double hx = cs * w / 2 + sn * ft.Height / 2, hy = sn * w / 2 + cs * ft.Height / 2;
                     var aabb = new Rect(center.X - hx - 2, center.Y - hy - 2, 2 * hx + 4, 2 * hy + 4);
-                    if (placed.Any(r => r.IntersectsWith(aabb))) continue;
+                    if (placed.Any(r => r.IntersectsWith(aabb)))
+                    {
+                        continue;
+                    }
+
                     placed.Add(aabb);
 
                     dc.PushTransform(new RotateTransform(angle, center.X, center.Y));
@@ -863,7 +1074,10 @@ public sealed class SurfaceView : FrameworkElement
                     break;
                 }
 
-                if (drawn > 3000) return; // предпазител при много гъсти хоризонтали
+                if (drawn > 3000)
+                {
+                    return; // предпазител при много гъсти хоризонтали
+                }
             }
         }
     }
@@ -872,10 +1086,22 @@ public sealed class SurfaceView : FrameworkElement
     {
         d = Math.Clamp(d, 0, acc[^1]);
         int i = Array.BinarySearch(acc, d);
-        if (i >= 0) return pts[i];
+        if (i >= 0)
+        {
+            return pts[i];
+        }
+
         i = ~i;
-        if (i <= 0) return pts[0];
-        if (i >= pts.Length) return pts[^1];
+        if (i <= 0)
+        {
+            return pts[0];
+        }
+
+        if (i >= pts.Length)
+        {
+            return pts[^1];
+        }
+
         double seg = acc[i] - acc[i - 1];
         double t = seg > 0 ? (d - acc[i - 1]) / seg : 0;
         return pts[i - 1] + (pts[i] - pts[i - 1]) * t;
@@ -941,11 +1167,19 @@ public sealed class SurfaceView : FrameworkElement
                 return;
             }
 
-            if (_draft.Count > 0) FinishDraft();
+            if (_draft.Count > 0)
+            {
+                FinishDraft();
+            }
+
             return;
         }
 
-        if (e.ChangedButton != MouseButton.Left) return;
+        if (e.ChangedButton != MouseButton.Left)
+        {
+            return;
+        }
+
         double pick = PickRadiusPx / _scale;
 
         switch (_tool)
@@ -957,14 +1191,20 @@ public sealed class SurfaceView : FrameworkElement
             case ToolMode.SwapEdge:
                 if (ActiveSurface != null &&
                     ActiveSurface.TryFindEdge(world.X, world.Y, double.PositiveInfinity, out int ea, out int eb))
+                {
                     SwapEdgeRequested?.Invoke(ea, eb);
+                }
+
                 break;
 
             case ToolMode.DeletePoint:
                 if (ActiveSurface != null)
                 {
                     int i = ActiveSurface.FindNearestPoint(world.X, world.Y, pick);
-                    if (i >= 0) DeletePointRequested?.Invoke(i);
+                    if (i >= 0)
+                    {
+                        DeletePointRequested?.Invoke(i);
+                    }
                 }
 
                 break;
@@ -973,16 +1213,26 @@ public sealed class SurfaceView : FrameworkElement
                 if (ActiveSurface != null)
                 {
                     _dragPoint = ActiveSurface.FindNearestPoint(world.X, world.Y, pick);
-                    if (_dragPoint >= 0) { _dragPos = world; _dragStartScreen = pos; CaptureMouse(); }
+                    if (_dragPoint >= 0)
+                    {
+                        _dragPos = world;
+                        _dragStartScreen = pos;
+                        CaptureMouse();
+                    }
                 }
 
                 break;
 
             case ToolMode.EditPlatform:
                 if (FindPlatformVertex(world, pick) is { } vh)
+                {
                     _dragVertex = (vh.Item1, vh.Item2, false);
+                }
                 else if (FindPlatformMidpoint(world, pick) is { } mh)
+                {
                     _dragVertex = (mh.Item1, mh.Item2, true);
+                }
+
                 if (_dragVertex != null)
                 {
                     _platformDragStarted = false;
@@ -990,19 +1240,35 @@ public sealed class SurfaceView : FrameworkElement
                     _dragPos = world;
                     CaptureMouse();
                 }
-                else if (FindPlatformAt(world) is { } pl) PlatformClicked?.Invoke(pl);
+                else if (FindPlatformAt(world) is { } pl)
+                {
+                    PlatformClicked?.Invoke(pl);
+                }
+
                 break;
 
             case ToolMode.DrawPlatform:
             case ToolMode.DrawSelection:
             case ToolMode.DrawBoundary:
-                if (e.ClickCount == 2) FinishDraft();
-                else _draft.Add(world);
+                if (e.ClickCount == 2)
+                {
+                    FinishDraft();
+                }
+                else
+                {
+                    _draft.Add(world);
+                }
+
                 break;
 
             case ToolMode.DrawBreakline:
             case ToolMode.DrawProfile:
-                if (e.ClickCount == 2) { FinishDraft(); break; }
+                if (e.ClickCount == 2)
+                {
+                    FinishDraft();
+                    break;
+                }
+
                 var snapped = Snap(world) ?? world;
                 if (_tool == ToolMode.DrawBreakline && _draft.Count >= 3 && snapped == _draft[0])
                 {
@@ -1010,7 +1276,10 @@ public sealed class SurfaceView : FrameworkElement
                     FinishDraft();
                 }
                 else if (_draft.Count == 0 || Point2.Distance(_draft[^1], snapped) > 1e-9)
+                {
                     _draft.Add(snapped);
+                }
+
                 break;
 
             case ToolMode.Pan:
@@ -1079,17 +1348,28 @@ public sealed class SurfaceView : FrameworkElement
             ReleaseMouseCapture();
             var up = e.GetPosition(this);
             if ((up - _dragStartScreen).Length < 3)
+            {
                 PointEditRequested?.Invoke(i); // щракване без влачене – редакция на котата
+            }
             else
+            {
                 MovePointRequested?.Invoke(i, _dragPos);
+            }
         }
 
         if (_dragVertex is { } dv)
         {
             _dragVertex = null;
             ReleaseMouseCapture();
-            if (_platformDragStarted) PlatformGeometryChanged?.Invoke(dv.Platform, true);
-            else PlatformClicked?.Invoke(dv.Platform); // щракване без влачене – избор на платформата
+            if (_platformDragStarted)
+            {
+                PlatformGeometryChanged?.Invoke(dv.Platform, true);
+            }
+            else
+            {
+                PlatformClicked?.Invoke(dv.Platform); // щракване без влачене – избор на платформата
+            }
+
             _platformDragStarted = false;
         }
 
@@ -1122,7 +1402,11 @@ public sealed class SurfaceView : FrameworkElement
     protected override void OnKeyDown(KeyEventArgs e)
     {
         base.OnKeyDown(e);
-        if (_draft.Count == 0) return;
+        if (_draft.Count == 0)
+        {
+            return;
+        }
+
         switch (e.Key)
         {
             case Key.Escape:
@@ -1146,7 +1430,10 @@ public sealed class SurfaceView : FrameworkElement
     protected override void OnRenderSizeChanged(SizeChangedInfo sizeInfo)
     {
         base.OnRenderSizeChanged(sizeInfo);
-        if (sizeInfo.PreviousSize.Width < 1) ZoomExtents();
+        if (sizeInfo.PreviousSize.Width < 1)
+        {
+            ZoomExtents();
+        }
     }
 
     private void FinishDraft()
@@ -1157,13 +1444,21 @@ public sealed class SurfaceView : FrameworkElement
             _draft.Clear();
             PolygonCompleted?.Invoke(_tool, poly);
         }
-        else _draft.Clear();
+        else
+        {
+            _draft.Clear();
+        }
+
         InvalidateVisual();
     }
 
     private (Platform, int)? FindPlatformVertex(Point2 world, double radius)
     {
-        if (Project == null) return null;
+        if (Project == null)
+        {
+            return null;
+        }
+
         (Platform, int)? best = null;
         double bestD = radius;
         foreach (var p in Project.Platforms)
@@ -1171,7 +1466,11 @@ public sealed class SurfaceView : FrameworkElement
             for (int i = 0; i < p.Boundary.Count; i++)
             {
                 double d = Point2.Distance(p.Boundary[i], world);
-                if (d <= bestD) { bestD = d; best = (p, i); }
+                if (d <= bestD)
+                {
+                    bestD = d;
+                    best = (p, i);
+                }
             }
         }
 
@@ -1181,7 +1480,11 @@ public sealed class SurfaceView : FrameworkElement
     /// <summary>Най-близкият маркер в средата на страна: (платформа, индекс на началото на страната).</summary>
     private (Platform, int)? FindPlatformMidpoint(Point2 world, double radius)
     {
-        if (Project == null) return null;
+        if (Project == null)
+        {
+            return null;
+        }
+
         (Platform, int)? best = null;
         double bestD = radius;
         foreach (var p in Project.Platforms)
@@ -1190,7 +1493,11 @@ public sealed class SurfaceView : FrameworkElement
             {
                 var m = (p.Boundary[i] + p.Boundary[(i + 1) % p.Boundary.Count]) * 0.5;
                 double d = Point2.Distance(m, world);
-                if (d <= bestD) { bestD = d; best = (p, i); }
+                if (d <= bestD)
+                {
+                    bestD = d;
+                    best = (p, i);
+                }
             }
         }
 
@@ -1199,11 +1506,22 @@ public sealed class SurfaceView : FrameworkElement
 
     private Platform? FindPlatformAt(Point2 world)
     {
-        if (Project == null) return null;
+        if (Project == null)
+        {
+            return null;
+        }
+
         foreach (var p in Project.Platforms)
         {
-            if (p.Boundary.Count < 3) continue;
-            if (p.GetPolygon().Contains(world)) return p;
+            if (p.Boundary.Count < 3)
+            {
+                continue;
+            }
+
+            if (p.GetPolygon().Contains(world))
+            {
+                return p;
+            }
         }
 
         return null;

@@ -20,7 +20,11 @@ public static class DesignSurfaceBuilder
         string name,
         bool gradingZoneOnly = true)
     {
-        if (gridStep <= 0) throw new ArgumentOutOfRangeException(nameof(gridStep));
+        if (gridStep <= 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(gridStep));
+        }
+
         var model = new GradingModel(existing, platforms);
         var points = new List<Point3>();
 
@@ -29,9 +33,17 @@ public static class DesignSurfaceBuilder
         {
             foreach (var p in existing.Vertices)
             {
-                if (model.IsInsidePlatform(p.X, p.Y)) continue;
+                if (model.IsInsidePlatform(p.X, p.Y))
+                {
+                    continue;
+                }
+
                 var dz = model.DesignElevation(p.X, p.Y);
-                if (dz is null || Math.Abs(dz.Value - p.Z) > Tol) continue;
+                if (dz is null || Math.Abs(dz.Value - p.Z) > Tol)
+                {
+                    continue;
+                }
+
                 points.Add(p);
             }
         }
@@ -39,7 +51,11 @@ public static class DesignSurfaceBuilder
         // 2. Структурни линии: запазените участъци от линиите на терена + контурите на платформите (ръб/кант)
         bool Affected(Point3 p)
         {
-            if (model.IsInsidePlatform(p.X, p.Y)) return true;
+            if (model.IsInsidePlatform(p.X, p.Y))
+            {
+                return true;
+            }
+
             var dz = model.DesignElevation(p.X, p.Y);
             return dz is null || Math.Abs(dz.Value - p.Z) > Tol;
         }
@@ -55,10 +71,17 @@ public static class DesignSurfaceBuilder
             foreach (var v in pl.GetPolygon().Densify(gridStep))
             {
                 var z = model.DesignElevation(v.X, v.Y);
-                if (z.HasValue) ring.Add(new Point3(v.X, v.Y, z.Value));
+                if (z.HasValue)
+                {
+                    ring.Add(new Point3(v.X, v.Y, z.Value));
+                }
             }
 
-            if (ring.Count < 3) continue;
+            if (ring.Count < 3)
+            {
+                continue;
+            }
+
             platformRings.Add(ring.ToList());
             ring.Add(ring[0]);
             breaklines.Add(new Breakline($"Ръб: {pl.Name}", ring));
@@ -75,7 +98,9 @@ public static class DesignSurfaceBuilder
             int nx = (int)Math.Ceiling((region.MaxX - x0) / gridStep) + 1;
             int ny = (int)Math.Ceiling((region.MaxY - y0) / gridStep) + 1;
             if ((long)nx * ny > 10_000_000)
+            {
                 throw new InvalidOperationException("Твърде малка стъпка на мрежата за тази площ.");
+            }
 
             // Състояние на възлите: 0 – няма данни, 1 – непроменен терен, 2 – променен (откос/платформа)
             var state = new byte[nx * ny];
@@ -88,9 +113,18 @@ public static class DesignSurfaceBuilder
                     double x = x0 + ix * gridStep;
                     int k = iy * nx + ix;
                     var dz = model.DesignElevation(x, y);
-                    if (dz is null) continue;
+                    if (dz is null)
+                    {
+                        continue;
+                    }
+
                     z[k] = dz.Value;
-                    if (model.IsInsidePlatform(x, y)) { state[k] = 3; continue; }
+                    if (model.IsInsidePlatform(x, y))
+                    {
+                        state[k] = 3;
+                        continue;
+                    }
+
                     var eg = existing.ElevationAt(x, y);
                     state[k] = (byte)(eg.HasValue && Math.Abs(dz.Value - eg.Value) > Tol ? 2 : 1);
                 }
@@ -105,7 +139,11 @@ public static class DesignSurfaceBuilder
                 var stack = new Stack<int>();
                 for (int k0 = 0; k0 < state.Length; k0++)
                 {
-                    if (state[k0] < 2 || label[k0] >= 0) continue;
+                    if (state[k0] < 2 || label[k0] >= 0)
+                    {
+                        continue;
+                    }
+
                     label[k0] = zones;
                     stack.Push(k0);
                     while (stack.Count > 0)
@@ -116,9 +154,17 @@ public static class DesignSurfaceBuilder
                             for (int dx = -1; dx <= 1; dx++)
                             {
                                 int jx = cx + dx, jy = cy + dy;
-                                if (jx < 0 || jy < 0 || jx >= nx || jy >= ny) continue;
+                                if (jx < 0 || jy < 0 || jx >= nx || jy >= ny)
+                                {
+                                    continue;
+                                }
+
                                 int j = jy * nx + jx;
-                                if (state[j] >= 2 && label[j] < 0) { label[j] = zones; stack.Push(j); }
+                                if (state[j] >= 2 && label[j] < 0)
+                                {
+                                    label[j] = zones;
+                                    stack.Push(j);
+                                }
                             }
                         }
                     }
@@ -139,7 +185,11 @@ public static class DesignSurfaceBuilder
                 for (int ix = 0; ix < nx; ix++)
                 {
                     int k = iy * nx + ix;
-                    if (state[k] == 0) continue;
+                    if (state[k] == 0)
+                    {
+                        continue;
+                    }
+
                     double x = x0 + ix * gridStep;
 
                     // Откосите се включват изцяло; вътрешността на платформата (равнина) – разредено
@@ -150,14 +200,25 @@ public static class DesignSurfaceBuilder
                         for (int dx = -1; dx <= 1 && !include; dx++)
                         {
                             int jx = ix + dx, jy = iy + dy;
-                            if (jx < 0 || jy < 0 || jx >= nx || jy >= ny) continue;
+                            if (jx < 0 || jy < 0 || jx >= nx || jy >= ny)
+                            {
+                                continue;
+                            }
+
                             byte s = state[jy * nx + jx];
                             include = state[k] == 3 ? s != 3 : s >= 2;
                         }
                     }
 
-                    if (include) row.Add(new Point3(x, y, z[k]));
-                    if (label[k] >= 0) hull.Add((label[k], new Point2(x, y)));
+                    if (include)
+                    {
+                        row.Add(new Point3(x, y, z[k]));
+                    }
+
+                    if (label[k] >= 0)
+                    {
+                        hull.Add((label[k], new Point2(x, y)));
+                    }
 
                     // Линия на догонване: бисекция между променен и непроменен съседен възел
                     if (state[k] == 2)
@@ -165,25 +226,51 @@ public static class DesignSurfaceBuilder
                         void Daylight(double xo, double yo)
                         {
                             // позицията на догонването влиза в контура на зоната винаги – и когато съвпада с възел
-                            if (AddDaylight(model, existing, row, x, y, xo, yo) is { } d && label[k] >= 0) hull.Add((label[k], d));
+                            if (AddDaylight(model, existing, row, x, y, xo, yo) is { } d && label[k] >= 0)
+                            {
+                                hull.Add((label[k], d));
+                            }
                         }
 
-                        if (ix + 1 < nx && state[k + 1] == 1) Daylight(x + gridStep, y);
-                        if (ix > 0 && state[k - 1] == 1) Daylight(x - gridStep, y);
-                        if (iy + 1 < ny && state[k + nx] == 1) Daylight(x, y + gridStep);
-                        if (iy > 0 && state[k - nx] == 1) Daylight(x, y - gridStep);
+                        if (ix + 1 < nx && state[k + 1] == 1)
+                        {
+                            Daylight(x + gridStep, y);
+                        }
+
+                        if (ix > 0 && state[k - 1] == 1)
+                        {
+                            Daylight(x - gridStep, y);
+                        }
+
+                        if (iy + 1 < ny && state[k + nx] == 1)
+                        {
+                            Daylight(x, y + gridStep);
+                        }
+
+                        if (iy > 0 && state[k - nx] == 1)
+                        {
+                            Daylight(x, y - gridStep);
+                        }
                     }
                 }
 
                 rows[iy] = row;
                 rowHull[iy] = hull;
             });
-            foreach (var r in rows) points.AddRange(r);
+            foreach (var r in rows)
+            {
+                points.AddRange(r);
+            }
 
             if (gradingZoneOnly)
             {
                 foreach (var h in rowHull)
-                    foreach (var (zone, p) in h) hullPoints[zone].Add(p);
+                {
+                    foreach (var (zone, p) in h)
+                    {
+                        hullPoints[zone].Add(p);
+                    }
+                }
 
                 // ръбовете на платформите – към зоната на най-близкия променен възел
                 foreach (var ring in platformRings)
@@ -197,18 +284,28 @@ public static class DesignSurfaceBuilder
                             for (int dx = -1; dx <= 1 && zone < 0; dx++)
                             {
                                 int jx = cx + dx, jy = cy + dy;
-                                if (jx >= 0 && jy >= 0 && jx < nx && jy < ny) zone = label[jy * nx + jx];
+                                if (jx >= 0 && jy >= 0 && jx < nx && jy < ny)
+                                {
+                                    zone = label[jy * nx + jx];
+                                }
                             }
                         }
 
-                        if (zone >= 0) hullPoints[zone].Add(v.XY);
+                        if (zone >= 0)
+                        {
+                            hullPoints[zone].Add(v.XY);
+                        }
                     }
                 }
 
                 // контур на всяка зона – вдлъбната обвивка, която следва линията на догонване
                 for (int zi = 0; zi < zones; zi++)
                 {
-                    if (hullPoints[zi].Count < 3) continue;
+                    if (hullPoints[zi].Count < 3)
+                    {
+                        continue;
+                    }
+
                     var ring = DataHull.Compute(hullPoints[zi], 3 * gridStep);
                     if (ring.Count >= 3)
                     {
@@ -251,7 +348,11 @@ public static class DesignSurfaceBuilder
     public static Surface? Rebuild(Surface design, Surface existing, IReadOnlyList<Platform> platforms)
     {
         var src = design.GradingSource ?? throw new InvalidOperationException("Повърхнината не е свързана с платформите.");
-        if (existing.TriangleCount == 0) return null;
+        if (existing.TriangleCount == 0)
+        {
+            return null;
+        }
+
         var result = Build(existing, platforms, src.GridStep, design.Name, src.ZoneOnly);
         result.EnsureTriangulated();
         return result;
@@ -277,14 +378,33 @@ public static class DesignSurfaceBuilder
             double x = xIn + (xOut - xIn) * t, y = yIn + (yOut - yIn) * t;
             var dz = model.DesignElevation(x, y);
             var eg = existing.ElevationAt(x, y);
-            if (dz is null || eg is null) return null;
-            if (Math.Abs(dz.Value - eg.Value) > Tol) t0 = t; else t1 = t;
+            if (dz is null || eg is null)
+            {
+                return null;
+            }
+
+            if (Math.Abs(dz.Value - eg.Value) > Tol)
+            {
+                t0 = t;
+            }
+            else
+            {
+                t1 = t;
+            }
         }
 
-        if (t1 >= 0.999) return new Point2(xOut, yOut); // догонването е във външния възел (той вече е в TIN)
+        if (t1 >= 0.999)
+        {
+            return new Point2(xOut, yOut); // догонването е във външния възел (той вече е в TIN)
+        }
+
         double xf = xIn + (xOut - xIn) * t1, yf = yIn + (yOut - yIn) * t1;
         var zf = existing.ElevationAt(xf, yf);
-        if (zf.HasValue && t1 > 0.001) output.Add(new Point3(xf, yf, zf.Value));
+        if (zf.HasValue && t1 > 0.001)
+        {
+            output.Add(new Point3(xf, yf, zf.Value));
+        }
+
         return new Point2(xf, yf);
     }
 }

@@ -52,9 +52,11 @@ public class BreaklineTests
                 var a = bl.Vertices[i - 1].XY;
                 var b = bl.Vertices[i].XY;
                 foreach (var (p, q) in edges)
+                {
                     Assert.False(
                         ProperlyCross(a, b, v[p].XY, v[q].XY),
                         $"Ребро {v[p]}–{v[q]} пресича структурната линия {a}–{b}");
+                }
             }
         }
     }
@@ -79,9 +81,14 @@ public class BreaklineTests
     {
         var rnd = new Random(7);
         var pts = Enumerable.Range(0, 600).Select(_ => new Point2(rnd.NextDouble() * 100, rnd.NextDouble() * 100)).ToList();
-        pts.Add(new Point2(-1, -1)); pts.Add(new Point2(101, -1)); pts.Add(new Point2(101, 101)); pts.Add(new Point2(-1, 101));
-        int a = pts.Count; pts.Add(new Point2(2, 3));
-        int b = pts.Count; pts.Add(new Point2(97, 91));
+        pts.Add(new Point2(-1, -1));
+        pts.Add(new Point2(101, -1));
+        pts.Add(new Point2(101, 101));
+        pts.Add(new Point2(-1, 101));
+        int a = pts.Count;
+        pts.Add(new Point2(2, 3));
+        int b = pts.Count;
+        pts.Add(new Point2(97, 91));
 
         var tri = Delaunay.Triangulate(pts);
         var r = ConstrainedDelaunay.Apply(pts, tri, new[] { (a, b) });
@@ -94,7 +101,9 @@ public class BreaklineTests
             for (int e = 0; e < 3; e++)
             {
                 if (ConstrainedDelaunay.Key(r.Triangles[k + e], r.Triangles[k + (e + 1) % 3]) == ConstrainedDelaunay.Key(a, b))
+                {
                     found = true;
+                }
             }
         }
 
@@ -102,7 +111,10 @@ public class BreaklineTests
 
         double area = 0;
         for (int k = 0; k < r.Triangles.Length; k += 3)
+        {
             area += Math.Abs(Cross(pts[r.Triangles[k]], pts[r.Triangles[k + 1]], pts[r.Triangles[k + 2]])) / 2;
+        }
+
         Assert.Equal(102.0 * 102.0, area, 1e-6);
     }
 
@@ -122,9 +134,15 @@ public class BreaklineTests
             Point2 p = default;
             for (int i = 1; i < bl.Vertices.Count; i++)
             {
-                var a = bl.Vertices[i - 1].XY; var b = bl.Vertices[i].XY;
+                var a = bl.Vertices[i - 1].XY;
+                var b = bl.Vertices[i].XY;
                 double len = Point2.Distance(a, b);
-                if (rem <= len || i == bl.Vertices.Count - 1) { p = a + (b - a) * Math.Min(rem / len, 1); break; }
+                if (rem <= len || i == bl.Vertices.Count - 1)
+                {
+                    p = a + (b - a) * Math.Min(rem / len, 1);
+                    break;
+                }
+
                 rem -= len;
             }
 
@@ -151,7 +169,11 @@ public class BreaklineTests
     {
         var pts = new List<Point3> { new(0, 0, 0), new(10, 0, 0), new(10, 10, 0), new(0, 10, 0) };
         var rnd = new Random(5);
-        for (int i = 0; i < 40; i++) pts.Add(new Point3(rnd.NextDouble() * 10, rnd.NextDouble() * 10, 0));
+        for (int i = 0; i < 40; i++)
+        {
+            pts.Add(new Point3(rnd.NextDouble() * 10, rnd.NextDouble() * 10, 0));
+        }
+
         var s = new Surface("t", pts);
         s.AddBreakline(new Breakline("A", new[] { new Point3(0.5, 5, 10), new Point3(9.5, 5, 10) }));
         s.AddBreakline(new Breakline("B", new[] { new Point3(5, 0.5, 0), new Point3(5, 9.5, 40) }));
@@ -254,7 +276,10 @@ public class BreaklineTests
             Assert.Single(doc.Descendants(ns + "Breakline"));
             Assert.Equal(s.TriangleCount, doc.Descendants(ns + "F").Count());
         }
-        finally { File.Delete(path); }
+        finally
+        {
+            File.Delete(path);
+        }
     }
 
     [Fact]
